@@ -12,31 +12,45 @@
           v-model:type="day.type"
           v-model:hours="day.hours"
           :day="day"
+          @update:type="updateDayType(day.date, $event)"
+          @update:hours="updateDayHours(day.date, $event)"
         />
       </div>
     </div>
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import DayCard from '~/components/DayCard.vue'
 
 /**
  * Work Schedule Application
  * 
  * This is the main page component for the Work Schedule application.
- * It manages the current month's view and generates the days to be displayed.
+ * It manages the current month's view, generates the days to be displayed,
+ * and handles local storage for persisting user selections.
  */
 
 // Current date reference, used to determine which month to display
 const currentDate = ref(new Date())
 
+// Function to get stored data from local storage
+const getStoredData = (date) => {
+  const storedData = localStorage.getItem(date)
+  return storedData ? JSON.parse(storedData) : { type: 'home', hours: 8 }
+}
+
+// Function to store data in local storage
+const storeData = (date, data) => {
+  localStorage.setItem(date, JSON.stringify(data))
+}
+
 /**
  * Computed property that generates an array of day objects for the current month.
  * Each day object contains:
  * - date: The date in ISO format (YYYY-MM-DD)
- * - type: Randomly assigned work type ('office' or 'home')
- * - hours: Default work hours (set to 8)
+ * - type: Work type ('home' by default or retrieved from local storage)
+ * - hours: Work hours (8 by default or retrieved from local storage)
  * 
  * @returns {Array} An array of day objects for the current month
  */
@@ -52,10 +66,12 @@ const daysInMonth = computed(() => {
     const date = new Date(year, month, i)
     // Adjust for local timezone to ensure correct date representation
     date.setMinutes(date.getMinutes() - date.getTimezoneOffset())
+    const dateString = date.toISOString().split('T')[0]
+    const storedData = getStoredData(dateString)
     days.push({
-      date: date.toISOString().split('T')[0],
-      type: ['office', 'home'][Math.floor(Math.random() * 2)],
-      hours: 8
+      date: dateString,
+      type: storedData.type,
+      hours: storedData.hours
     })
   }
   return days
@@ -80,6 +96,49 @@ function changeMonth(delta) {
   newDate.setMonth(newDate.getMonth() + delta)
   currentDate.value = newDate
 }
+
+/**
+ * Updates the work type for a specific day and stores it in local storage.
+ * 
+ * @param {string} date - The date in ISO format (YYYY-MM-DD)
+ * @param {string} newType - The new work type ('home' or 'office')
+ */
+function updateDayType(date, newType) {
+  const storedData = getStoredData(date)
+  storedData.type = newType
+  storeData(date, storedData)
+}
+
+/**
+ * Updates the work hours for a specific day and stores it in local storage.
+ * 
+ * @param {string} date - The date in ISO format (YYYY-MM-DD)
+ * @param {number} newHours - The new work hours
+ */
+function updateDayHours(date, newHours) {
+  const storedData = getStoredData(date)
+  storedData.hours = newHours
+  storeData(date, storedData)
+}
+
+// Watch for changes in the current date and update local storage accordingly
+watch(currentDate, () => {
+  daysInMonth.value.forEach(day => {
+    const storedData = getStoredData(day.date)
+    if (storedData.type !== day.type || storedData.hours !== day.hours) {
+      storeData(day.date, { type: day.type, hours: day.hours })
+    }
+  })
+})
+
+// Initialize data from local storage when the component is mounted
+onMounted(() => {
+  daysInMonth.value.forEach(day => {
+    const storedData = getStoredData(day.date)
+    day.type = storedData.type
+    day.hours = storedData.hours
+  })
+})
 </script>
 
 <style scoped>
