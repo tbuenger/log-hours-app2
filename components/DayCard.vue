@@ -110,10 +110,12 @@ function workTypeWithEmoji(type) {
  * - The component remains reactive to external updates via the watcher.
  */
 function flipCard() {
-  isFlipped.value = !isFlipped.value
+  isFlipped.value = true
   
   setTimeout(() => {
-    emit('update:type', flippedType.value)
+    currentType.value = flippedType.value
+    emit('update:type', currentType.value)
+    isFlipped.value = false
   }, 150) // 150ms is half of the 300ms animation duration
 }
 

@@ -1,5 +1,9 @@
 <template>
     <div class="container">
+      <div class="progress-bar-container">
+        <div class="progress-bar" :style="{ width: officePercentage + '%', backgroundColor: progressBarColor }"></div>
+        <span class="progress-text">{{ officePercentage.toFixed(1) }}% Office Time</span>
+      </div>
       <div class="month-picker">
         <button @click="changeMonth(-1)">Previous</button>
         <span>{{ currentMonthYear }}</span>
@@ -9,8 +13,6 @@
         <DayCard
           v-for="day in daysInMonth"
           :key="day.date"
-          v-model:type="day.type"
-          v-model:hours="day.hours"
           :day="day"
           @update:type="updateDayType(day.date, $event)"
           @update:hours="updateDayHours(day.date, $event)"
@@ -34,6 +36,9 @@ import DayCard from '~/components/DayCard.vue'
 // Current date reference, used to determine which month to display
 const currentDate = ref(new Date())
 
+// Add a reactive reference to trigger updates
+const updateTrigger = ref(0)
+
 // Function to get stored data from local storage
 const getStoredData = (date) => {
   const storedData = localStorage.getItem(date)
@@ -47,35 +52,27 @@ const storeData = (date, data) => {
 
 /**
  * Computed property that generates an array of day objects for the current month.
- * Each day object contains:
- * - date: The date in ISO format (YYYY-MM-DD)
- * - type: Work type ('home' by default or retrieved from local storage)
- * - hours: Work hours (8 by default or retrieved from local storage)
- * 
- * @returns {Array} An array of day objects for the current month
+ * Now reactive to changes in updateTrigger.
  */
-const daysInMonth = computed(() => {
+const daysInMonth = ref([])
+
+const updateDaysInMonth = () => {
   const year = currentDate.value.getFullYear()
   const month = currentDate.value.getMonth()
+  const daysInMonthCount = new Date(year, month + 1, 0).getDate()
   
-  // Calculate the number of days in the current month
-  const daysInMonth = new Date(year, month + 1, 0).getDate()
-  
-  const days = []
-  for (let i = 1; i <= daysInMonth; i++) {
-    const date = new Date(year, month, i)
-    // Adjust for local timezone to ensure correct date representation
+  daysInMonth.value = Array.from({ length: daysInMonthCount }, (_, i) => {
+    const date = new Date(year, month, i + 1)
     date.setMinutes(date.getMinutes() - date.getTimezoneOffset())
     const dateString = date.toISOString().split('T')[0]
     const storedData = getStoredData(dateString)
-    days.push({
+    return {
       date: dateString,
       type: storedData.type,
       hours: storedData.hours
-    })
-  }
-  return days
-})
+    }
+  })
+}
 
 /**
  * Computed property that returns the current month and year as a formatted string.
@@ -84,6 +81,35 @@ const daysInMonth = computed(() => {
  */
 const currentMonthYear = computed(() => {
   return currentDate.value.toLocaleString('default', { month: 'long', year: 'numeric' })
+})
+
+/**
+ * Computed property that calculates the office time percentage.
+ * This property now depends on both the work type and hours of each day.
+ * 
+ * @returns {number} Percentage of office time
+ */
+const officePercentage = computed(() => {
+  const workingDays = daysInMonth.value.filter(day => {
+    const dayOfWeek = new Date(day.date).getDay()
+    return dayOfWeek !== 0 && dayOfWeek !== 6 // Exclude weekends
+  })
+
+  const totalWorkHours = workingDays.length * 8 // 8 hours per working day
+  const officeHours = workingDays.reduce((sum, day) => {
+    return sum + (day.type === 'office' ? day.hours : 0) // Use actual hours for office days
+  }, 0)
+
+  return (officeHours / totalWorkHours) * 100
+})
+
+/**
+ * Computed property that determines the color of the progress bar.
+ * 
+ * @returns {string} Color value for the progress bar
+ */
+const progressBarColor = computed(() => {
+  return officePercentage.value >= 40 ? '#4CAF50' : '#FF9800'
 })
 
 /**
@@ -104,9 +130,12 @@ function changeMonth(delta) {
  * @param {string} newType - The new work type ('home' or 'office')
  */
 function updateDayType(date, newType) {
-  const storedData = getStoredData(date)
-  storedData.type = newType
-  storeData(date, storedData)
+  const dayIndex = daysInMonth.value.findIndex(day => day.date === date)
+  if (dayIndex !== -1) {
+    daysInMonth.value[dayIndex].type = newType
+    storeData(date, { ...daysInMonth.value[dayIndex] })
+    updateTrigger.value++
+  }
 }
 
 /**
@@ -116,28 +145,20 @@ function updateDayType(date, newType) {
  * @param {number} newHours - The new work hours
  */
 function updateDayHours(date, newHours) {
-  const storedData = getStoredData(date)
-  storedData.hours = newHours
-  storeData(date, storedData)
+  const dayIndex = daysInMonth.value.findIndex(day => day.date === date)
+  if (dayIndex !== -1) {
+    daysInMonth.value[dayIndex].hours = newHours
+    storeData(date, { ...daysInMonth.value[dayIndex] })
+    updateTrigger.value++
+  }
 }
 
 // Watch for changes in the current date and update local storage accordingly
-watch(currentDate, () => {
-  daysInMonth.value.forEach(day => {
-    const storedData = getStoredData(day.date)
-    if (storedData.type !== day.type || storedData.hours !== day.hours) {
-      storeData(day.date, { type: day.type, hours: day.hours })
-    }
-  })
-})
+watch(currentDate, updateDaysInMonth)
 
 // Initialize data from local storage when the component is mounted
 onMounted(() => {
-  daysInMonth.value.forEach(day => {
-    const storedData = getStoredData(day.date)
-    day.type = storedData.type
-    day.hours = storedData.hours
-  })
+  updateDaysInMonth()
 })
 </script>
 
@@ -148,6 +169,33 @@ onMounted(() => {
   margin: 0 auto;
   padding: 20px;
   box-sizing: border-box;
+  padding-top: 60px; /* Make room for the fixed progress bar */
+}
+
+.progress-bar-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 40px;
+  background-color: #f0f0f0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  padding: 0 20px;
+}
+
+.progress-bar {
+  height: 20px;
+  transition: width 0.3s ease, background-color 0.3s ease;
+}
+
+.progress-text {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  font-weight: bold;
+  color: #333;
 }
 
 .month-picker {
