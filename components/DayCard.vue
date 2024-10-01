@@ -1,6 +1,6 @@
 <template>
   <div class="day-card-container">
-    <div class="day-card" :class="{ 'is-flipped': isFlipped, 'is-holiday': props.day.isHoliday }">
+    <div class="day-card" :class="{ 'is-flipped': isFlipped, 'is-holiday': props.day.isHoliday }" @click="flipCard">
       <div class="day-card-inner">
         <div class="day-card-face front" :class="currentType">
           <div class="day-info">
@@ -8,7 +8,7 @@
             <div class="date">{{ formattedDate }}</div>
           </div>
           <div class="work-type">{{ workTypeWithEmoji(currentType) }}</div>
-          <div class="hours">{{ formatHours(props.day.hours) }}</div>
+          <div class="hours" @click.stop="toggleHoursSelector">{{ formatHours(props.day.hours) }}</div>
           <div v-if="props.day.isHoliday" class="holiday-name">{{ props.day.holidayName }}</div>
         </div>
         <div class="day-card-face back" :class="flippedType">
@@ -245,5 +245,14 @@ onMounted(() => {
   font-size: 0.8em;
   color: #666;
   margin-top: 4px;
+}
+
+/* New styles to ensure non-holiday cards remain interactive */
+.day-card:not(.is-holiday) {
+  cursor: pointer;
+}
+
+.day-card:not(.is-holiday) .hours {
+  cursor: pointer;
 }
 </style>
