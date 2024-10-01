@@ -36,7 +36,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import HoursSelector from './HoursSelector.vue'
 
 /**
@@ -64,7 +64,7 @@ const isFlipped = ref(false)
 
 // CRITICAL: This ref tracks the current work type independently of props
 // It's updated via a watcher when the prop changes, allowing for smooth transitions
-const currentType = ref(props.day.type)
+const currentType = ref(props.day.workType || 'home')
 
 // Computed properties for date formatting
 const weekdayAbbreviation = computed(() => {
@@ -144,8 +144,12 @@ function formatHours(hours) {
  * This allows the component to react to both internal changes (via flipCard) 
  * and external changes (via prop updates).
  */
-watch(() => props.day.type, (newType) => {
+watch(() => props.day.workType, (newType) => {
   currentType.value = newType
+})
+
+onMounted(() => {
+  currentType.value = props.day.workType || 'home'
 })
 </script>
 

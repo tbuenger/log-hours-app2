@@ -1,29 +1,36 @@
 <template>
-    <div class="container">
-      <div class="progress-bar-container">
-        <div class="progress-bar" :style="{ width: officePercentage + '%', backgroundColor: progressBarColor }"></div>
-        <span class="progress-text">{{ officePercentage.toFixed(1) }}% Office Time</span>
-      </div>
-      <div class="month-picker">
-        <button @click="changeMonth(-1)">Previous</button>
-        <span>{{ currentMonthYear }}</span>
-        <button @click="changeMonth(1)">Next</button>
-      </div>
-      <div class="cards-container">
-        <DayCard
-          v-for="day in daysInMonth"
-          :key="day.date"
-          :day="day"
-          @update:type="updateDayType(day.date, $event)"
-          @update:hours="updateDayHours(day.date, $event)"
-        />
-      </div>
+  <div class="container">
+    <div class="progress-bar-container">
+      <div class="progress-bar" :style="{ width: officePercentage + '%', backgroundColor: progressBarColor }"></div>
+      <span class="progress-text">{{ officePercentage.toFixed(1) }}% Office Time</span>
     </div>
+    <div class="month-picker">
+      <button @click="changeMonth(-1)">Previous</button>
+      <span>{{ currentMonthYear }}</span>
+      <button @click="changeMonth(1)">Next</button>
+    </div>
+    <div class="cards-container">
+      <template v-for="(item, index) in daysAndDividers" :key="index">
+        <WeekDivider v-if="item.type === 'divider'" :weekNumber="item.weekNumber" />
+        <DayCard
+          v-else
+          :day="item"
+          @update:type="updateDayType(item.date, $event)"
+          @update:hours="updateDayHours(item.date, $event)"
+        />
+      </template>
+    </div>
+    <div class="reset-buttons">
+      <button @click="clearCurrentMonth">Clear Current Month</button>
+      <button @click="clearAllData">Clear All Data</button>
+    </div>
+  </div>
 </template>
 
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
 import DayCard from '~/components/DayCard.vue'
+import WeekDivider from '~/components/WeekDivider.vue'
 
 /**
  * Work Schedule Application
@@ -42,7 +49,7 @@ const updateTrigger = ref(0)
 // Function to get stored data from local storage
 const getStoredData = (date) => {
   const storedData = localStorage.getItem(date)
-  return storedData ? JSON.parse(storedData) : { type: 'home', hours: 8 }
+  return storedData ? JSON.parse(storedData) : { type: 'home', hours: 8 }  // Changed default to 'home'
 }
 
 // Function to store data in local storage
@@ -54,24 +61,58 @@ const storeData = (date, data) => {
  * Computed property that generates an array of day objects for the current month.
  * Now reactive to changes in updateTrigger.
  */
-const daysInMonth = ref([])
+const daysAndDividers = ref([])
 
-const updateDaysInMonth = () => {
+const updateDaysAndDividers = () => {
   const year = currentDate.value.getFullYear()
   const month = currentDate.value.getMonth()
   const daysInMonthCount = new Date(year, month + 1, 0).getDate()
   
-  daysInMonth.value = Array.from({ length: daysInMonthCount }, (_, i) => {
-    const date = new Date(year, month, i + 1)
-    date.setMinutes(date.getMinutes() - date.getTimezoneOffset())
-    const dateString = date.toISOString().split('T')[0]
-    const storedData = getStoredData(dateString)
-    return {
-      date: dateString,
-      type: storedData.type,
-      hours: storedData.hours
+  const items = []
+  let currentWeek = null
+  let firstWorkdayFound = false
+
+  for (let i = 1; i <= daysInMonthCount; i++) {
+    const date = new Date(year, month, i)
+    const dayOfWeek = date.getDay()
+    const weekNumber = getWeekNumber(date)
+
+    // Add day card if it's a workday (Monday to Friday)
+    if (dayOfWeek >= 1 && dayOfWeek <= 5) {
+      // Add week divider if it's a new week and we've found the first workday
+      if (weekNumber !== currentWeek && firstWorkdayFound) {
+        items.push({ type: 'divider', weekNumber })
+      }
+      
+      if (!firstWorkdayFound) {
+        firstWorkdayFound = true
+        items.push({ type: 'divider', weekNumber })
+      }
+
+      currentWeek = weekNumber
+
+      date.setMinutes(date.getMinutes() - date.getTimezoneOffset())
+      const dateString = date.toISOString().split('T')[0]
+      const storedData = getStoredData(dateString)
+      items.push({
+        type: 'day',
+        date: dateString,
+        workType: storedData.type,
+        hours: storedData.hours
+      })
     }
-  })
+  }
+
+  daysAndDividers.value = items
+}
+
+// Function to get the week number
+function getWeekNumber(date) {
+  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()))
+  const dayNum = d.getUTCDay() || 7
+  d.setUTCDate(d.getUTCDate() + 4 - dayNum)
+  const yearStart = new Date(Date.UTC(d.getUTCFullYear(),0,1))
+  return Math.ceil((((d - yearStart) / 86400000) + 1)/7)
 }
 
 /**
@@ -90,16 +131,11 @@ const currentMonthYear = computed(() => {
  * @returns {number} Percentage of office time
  */
 const officePercentage = computed(() => {
-  const workingDays = daysInMonth.value.filter(day => {
-    const dayOfWeek = new Date(day.date).getDay()
-    return dayOfWeek !== 0 && dayOfWeek !== 6 // Exclude weekends
-  })
-
+  const workingDays = daysAndDividers.value.filter(item => item.type === 'day')
   const totalWorkHours = workingDays.length * 8 // 8 hours per working day
   const officeHours = workingDays.reduce((sum, day) => {
-    return sum + (day.type === 'office' ? day.hours : 0) // Use actual hours for office days
+    return sum + (day.workType === 'office' ? day.hours : 0)
   }, 0)
-
   return (officeHours / totalWorkHours) * 100
 })
 
@@ -121,6 +157,7 @@ function changeMonth(delta) {
   const newDate = new Date(currentDate.value)
   newDate.setMonth(newDate.getMonth() + delta)
   currentDate.value = newDate
+  updateDaysAndDividers()
 }
 
 /**
@@ -130,11 +167,10 @@ function changeMonth(delta) {
  * @param {string} newType - The new work type ('home' or 'office')
  */
 function updateDayType(date, newType) {
-  const dayIndex = daysInMonth.value.findIndex(day => day.date === date)
+  const dayIndex = daysAndDividers.value.findIndex(item => item.type === 'day' && item.date === date)
   if (dayIndex !== -1) {
-    daysInMonth.value[dayIndex].type = newType
-    storeData(date, { ...daysInMonth.value[dayIndex] })
-    updateTrigger.value++
+    daysAndDividers.value[dayIndex].workType = newType
+    storeData(date, { type: newType, hours: daysAndDividers.value[dayIndex].hours })
   }
 }
 
@@ -145,20 +181,43 @@ function updateDayType(date, newType) {
  * @param {number} newHours - The new work hours
  */
 function updateDayHours(date, newHours) {
-  const dayIndex = daysInMonth.value.findIndex(day => day.date === date)
+  const dayIndex = daysAndDividers.value.findIndex(item => item.type === 'day' && item.date === date)
   if (dayIndex !== -1) {
-    daysInMonth.value[dayIndex].hours = newHours
-    storeData(date, { ...daysInMonth.value[dayIndex] })
-    updateTrigger.value++
+    daysAndDividers.value[dayIndex].hours = newHours
+    storeData(date, { type: daysAndDividers.value[dayIndex].workType, hours: newHours })
   }
 }
 
+/**
+ * Clears the data for the current month in local storage
+ */
+function clearCurrentMonth() {
+  const year = currentDate.value.getFullYear()
+  const month = currentDate.value.getMonth()
+  const daysInMonthCount = new Date(year, month + 1, 0).getDate()
+
+  for (let i = 1; i <= daysInMonthCount; i++) {
+    const date = new Date(year, month, i)
+    const dateString = date.toISOString().split('T')[0]
+    localStorage.removeItem(dateString)
+  }
+  updateDaysAndDividers()
+}
+
+/**
+ * Clears all data in local storage
+ */
+function clearAllData() {
+  localStorage.clear()
+  updateDaysAndDividers()
+}
+
 // Watch for changes in the current date and update local storage accordingly
-watch(currentDate, updateDaysInMonth)
+watch(currentDate, updateDaysAndDividers)
 
 // Initialize data from local storage when the component is mounted
 onMounted(() => {
-  updateDaysInMonth()
+  updateDaysAndDividers()
 })
 </script>
 
@@ -229,5 +288,25 @@ onMounted(() => {
   width: 100%;
   padding: 0;
   margin: 0;
+}
+
+.reset-buttons {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 20px;
+}
+
+.reset-buttons button {
+  padding: 10px 15px;
+  background-color: #e74c3c;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.reset-buttons button:hover {
+  background-color: #c0392b;
 }
 </style>
