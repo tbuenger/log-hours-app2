@@ -31,6 +31,7 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import DayCard from '~/components/DayCard.vue'
 import WeekDivider from '~/components/WeekDivider.vue'
+import { isHoliday, getHolidayName } from '~/utils/holidays'
 
 /**
  * Work Schedule Application
@@ -77,8 +78,8 @@ const updateDaysAndDividers = () => {
     const dayOfWeek = date.getDay()
     const weekNumber = getWeekNumber(date)
 
-    // Add day card if it's a workday (Monday to Friday)
-    if (dayOfWeek >= 1 && dayOfWeek <= 5) {
+    // Add day card if it's a workday (Monday to Friday) or a holiday
+    if (dayOfWeek >= 1 && dayOfWeek <= 5 || isHoliday(date.toISOString().split('T')[0])) {
       // Add week divider if it's a new week and we've found the first workday
       if (weekNumber !== currentWeek && firstWorkdayFound) {
         items.push({ type: 'divider', weekNumber })
@@ -94,11 +95,15 @@ const updateDaysAndDividers = () => {
       date.setMinutes(date.getMinutes() - date.getTimezoneOffset())
       const dateString = date.toISOString().split('T')[0]
       const storedData = getStoredData(dateString)
+      const holidayName = getHolidayName(dateString)
+
       items.push({
         type: 'day',
         date: dateString,
-        workType: storedData.type,
-        hours: storedData.hours
+        workType: holidayName ? 'holiday' : storedData.type,
+        hours: holidayName ? 8 : storedData.hours,
+        isHoliday: !!holidayName,
+        holidayName: holidayName
       })
     }
   }
@@ -134,7 +139,7 @@ const officePercentage = computed(() => {
   const workingDays = daysAndDividers.value.filter(item => item.type === 'day')
   const totalWorkHours = workingDays.length * 8 // 8 hours per working day
   const officeHours = workingDays.reduce((sum, day) => {
-    return sum + (day.workType === 'office' ? day.hours : 0)
+    return sum + ((day.workType === 'office' || day.workType === 'holiday') ? day.hours : 0)
   }, 0)
   return (officeHours / totalWorkHours) * 100
 })

@@ -1,33 +1,28 @@
 <template>
   <div class="day-card-container">
-    <!-- The main card container with dynamic class for flipping -->
-    <div class="day-card" :class="{ 'is-flipped': isFlipped }" @click="flipCard">
+    <div class="day-card" :class="{ 'is-flipped': isFlipped, 'is-holiday': props.day.isHoliday }">
       <div class="day-card-inner">
-        <!-- Front face of the card -->
         <div class="day-card-face front" :class="currentType">
           <div class="day-info">
             <div class="weekday">{{ weekdayAbbreviation }}</div>
             <div class="date">{{ formattedDate }}</div>
           </div>
-          <!-- Display current work type with emoji -->
           <div class="work-type">{{ workTypeWithEmoji(currentType) }}</div>
-          <div class="hours" @click.stop="toggleHoursSelector">{{ formatHours(props.day.hours) }}</div>
+          <div class="hours">{{ formatHours(props.day.hours) }}</div>
+          <div v-if="props.day.isHoliday" class="holiday-name">{{ props.day.holidayName }}</div>
         </div>
-        <!-- Back face of the card -->
         <div class="day-card-face back" :class="flippedType">
           <div class="day-info">
             <div class="weekday">{{ weekdayAbbreviation }}</div>
             <div class="date">{{ formattedDate }}</div>
           </div>
-          <!-- Display flipped (opposite) work type with emoji -->
           <div class="work-type">{{ workTypeWithEmoji(flippedType) }}</div>
           <div class="hours" @click.stop="toggleHoursSelector">{{ formatHours(props.day.hours) }}</div>
         </div>
       </div>
     </div>
-    <!-- Hours selector component, shown when toggled -->
     <HoursSelector 
-      v-if="showHoursSelector" 
+      v-if="showHoursSelector && !props.day.isHoliday" 
       :hours="props.day.hours" 
       @update:hours="updateHours" 
       @close="showHoursSelector = false"
@@ -92,6 +87,7 @@ const flippedType = computed(() => currentType.value === 'home' ? 'office' : 'ho
  * @returns {string} Work type with emoji
  */
 function workTypeWithEmoji(type) {
+  if (type === 'holiday') return '🎉 Holiday'
   return type === 'home' ? '🏠 Home' : '🏢 Office'
 }
 
@@ -110,6 +106,7 @@ function workTypeWithEmoji(type) {
  * - The component remains reactive to external updates via the watcher.
  */
 function flipCard() {
+  if (props.day.isHoliday) return // Prevent flipping for holidays
   isFlipped.value = true
   
   setTimeout(() => {
@@ -121,6 +118,7 @@ function flipCard() {
 
 // Other utility functions
 function toggleHoursSelector(event) {
+  if (props.day.isHoliday) return // Prevent hours selection for holidays
   event.stopPropagation()
   showHoursSelector.value = !showHoursSelector.value
 }
@@ -236,5 +234,16 @@ onMounted(() => {
 
 .hours {
   cursor: pointer;
+}
+
+.is-holiday {
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+.holiday-name {
+  font-size: 0.8em;
+  color: #666;
+  margin-top: 4px;
 }
 </style>
