@@ -91,7 +91,6 @@ function toggleHoursSelector(event) {
 // Update hours and close the selector
 function updateHours(newHours) {
   emit('update:hours', newHours)
-  showHoursSelector.value = false
 }
 
 // Format hours for display (e.g., "08:30")
@@ -105,6 +104,7 @@ function formatHours(hours) {
 <style scoped>
 /* Card container styles */
 .day-card-container {
+  position: relative;
   margin-bottom: 16px;
 }
 

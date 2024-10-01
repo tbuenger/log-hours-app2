@@ -1,147 +1,112 @@
 <template>
-  <div class="hours-selector" @click.stop>
-    <div class="selector-content">
-      <div class="selector-wheel" 
-           ref="wheelRef" 
-           @touchstart="startDrag" 
-           @touchmove="drag" 
-           @touchend="endDrag"
-           @mousedown="startDrag"
-           @mousemove="drag"
-           @mouseup="endDrag"
-           @mouseleave="endDrag">
-        <div 
-          v-for="hour in displayedHours" 
-          :key="hour" 
-          class="hour-option"
-          :class="{ active: hour === selectedHours }"
-        >
-          {{ formatHour(hour) }}
-        </div>
+  <div class="hours-selector" @touchmove.prevent>
+    <div class="scroll-wheel" ref="scrollWheel" @touchstart="touchStart" @touchmove="touchMove" @touchend="touchEnd">
+      <div class="hour-option spacer"></div>
+      <div 
+        v-for="hour in hourOptions" 
+        :key="hour" 
+        class="hour-option"
+        :class="{ 'selected': isSelected(hour) }"
+      >
+        {{ formatHour(hour) }}
       </div>
-      <div class="selector-highlight"></div>
+      <div class="hour-option spacer"></div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, onMounted, watch } from 'vue';
 
-const props = defineProps(['hours'])
-const emit = defineEmits(['update:hours', 'close'])
+const props = defineProps(['hours']);
+const emit = defineEmits(['update:hours', 'close']);
 
-const selectedHours = ref(props.hours)
-const wheelRef = ref(null)
-const scrollTop = ref(0)
-const itemHeight = 40 // Height of each hour option in pixels
+const scrollWheel = ref(null);
+const hourOptions = Array.from({ length: 48 }, (_, i) => i * 0.5);
 
-const hourOptions = computed(() => {
-  return Array.from({ length: 25 }, (_, i) => i / 2).filter(h => h > 0)
-})
+const isSelected = (hour) => Math.abs(props.hours - hour) < 0.25;
 
-const displayedHours = computed(() => {
-  return [...hourOptions.value.slice(-3), ...hourOptions.value, ...hourOptions.value.slice(0, 3)]
-})
+const formatHour = (hour) => {
+  const wholeHours = Math.floor(hour);
+  const minutes = (hour % 1) * 60;
+  return `${wholeHours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+};
 
-const startY = ref(0)
-const startScrollTop = ref(0)
-const isDragging = ref(false)
+let startY = 0;
+let startScrollTop = 0;
 
-function startDrag(event) {
-  isDragging.value = true
-  startY.value = event.touches ? event.touches[0].clientY : event.clientY
-  startScrollTop.value = scrollTop.value
-}
+const touchStart = (e) => {
+  startY = e.touches[0].clientY;
+  startScrollTop = scrollWheel.value.scrollTop;
+};
 
-function drag(event) {
-  if (!isDragging.value) return
-  const currentY = event.touches ? event.touches[0].clientY : event.clientY
-  const deltaY = currentY - startY.value
-  scrollTop.value = startScrollTop.value - deltaY
-  updateSelectedHour()
-}
+const touchMove = (e) => {
+  const deltaY = startY - e.touches[0].clientY;
+  scrollWheel.value.scrollTop = startScrollTop + deltaY;
+};
 
-function endDrag() {
-  if (!isDragging.value) return
-  isDragging.value = false
-  const nearestHourIndex = Math.round(scrollTop.value / itemHeight)
-  scrollTop.value = nearestHourIndex * itemHeight
-  updateSelectedHour()
-}
-
-function updateSelectedHour() {
-  const index = Math.round(scrollTop.value / itemHeight) % hourOptions.value.length
-  selectedHours.value = hourOptions.value[index]
-  emit('update:hours', selectedHours.value)
-}
-
-function formatHour(hour) {
-  const wholeHours = Math.floor(hour)
-  const minutes = (hour % 1) * 60
-  return `${wholeHours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`
-}
+const touchEnd = () => {
+  const selectedIndex = Math.round(scrollWheel.value.scrollTop / 40);
+  const selectedHour = hourOptions[selectedIndex];
+  emit('update:hours', selectedHour);
+  setTimeout(() => emit('close'), 300);
+};
 
 onMounted(() => {
-  const initialIndex = hourOptions.value.indexOf(selectedHours.value)
-  scrollTop.value = (initialIndex + 3) * itemHeight // +3 to account for extra options at the beginning
-})
+  const selectedIndex = hourOptions.findIndex(hour => isSelected(hour));
+  scrollWheel.value.scrollTop = selectedIndex * 40;
+});
 
-watch(scrollTop, () => {
-  if (wheelRef.value) {
-    wheelRef.value.style.transform = `translateY(${-scrollTop.value}px)`
-  }
-})
+watch(() => props.hours, (newHours) => {
+  const selectedIndex = hourOptions.findIndex(hour => isSelected(newHours));
+  scrollWheel.value.scrollTop = selectedIndex * 40;
+});
 </script>
 
 <style scoped>
 .hours-selector {
   position: absolute;
-  top: 100%;
-  right: 0;
-  z-index: 1000;
-}
-
-.selector-content {
-  background-color: white;
-  border-radius: 8px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-  padding: 10px;
+  right: 10px;
+  bottom: 10px;
+  width: 80px;
   height: 120px;
+  background-color: rgba(255, 255, 255, 0.9);
+  border-radius: 10px;
   overflow: hidden;
-  position: relative;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
-.selector-wheel {
-  transition: transform 0.1s;
-  cursor: grab;
-}
-
-.selector-wheel:active {
-  cursor: grabbing;
+.scroll-wheel {
+  height: 100%;
+  overflow-y: scroll;
+  -webkit-overflow-scrolling: touch;
+  scroll-snap-type: y mandatory;
 }
 
 .hour-option {
   height: 40px;
-  line-height: 40px;
-  text-align: center;
-  font-size: 1.2em;
-  color: #999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  scroll-snap-align: center;
 }
 
-.selector-highlight {
-  position: absolute;
-  top: 50%;
-  left: 0;
-  right: 0;
+.hour-option.spacer {
   height: 40px;
-  transform: translateY(-50%);
-  border-top: 1px solid #ccc;
-  border-bottom: 1px solid #ccc;
-  pointer-events: none;
 }
 
-.hour-option.active {
+.hour-option.selected {
   font-weight: bold;
-  color: #000;
+  color: #007AFF;
+}
+
+/* Hide scrollbar */
+.scroll-wheel::-webkit-scrollbar {
+  display: none;
+}
+.scroll-wheel {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
 </style>
