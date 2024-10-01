@@ -4,7 +4,7 @@
     <div class="day-card" :class="{ 'is-flipped': isFlipped }" @click="flipCard">
       <div class="day-card-inner">
         <!-- Front face of the card -->
-        <div class="day-card-face front">
+        <div class="day-card-face front" :class="currentType">
           <div class="day-info">
             <div class="weekday">{{ weekdayAbbreviation }}</div>
             <div class="date">{{ formattedDate }}</div>
@@ -14,7 +14,7 @@
           <div class="hours" @click.stop="toggleHoursSelector">{{ formatHours(props.day.hours) }}</div>
         </div>
         <!-- Back face of the card -->
-        <div class="day-card-face back">
+        <div class="day-card-face back" :class="flippedType">
           <div class="day-info">
             <div class="weekday">{{ weekdayAbbreviation }}</div>
             <div class="date">{{ formattedDate }}</div>
@@ -36,19 +36,37 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import HoursSelector from './HoursSelector.vue'
+
+/**
+ * DayCard Component
+ * 
+ * This component represents a single day in the work schedule.
+ * It displays the date, work type (home/office), and work hours.
+ * The card can be flipped to change the work type.
+ * 
+ * Key Concepts:
+ * 1. Flip Animation: The card uses a 3D flip animation to switch between work types.
+ * 2. Two-Face Card: The card has a front and back face, each showing different work types.
+ * 3. Delayed Update: The type update is delayed to coincide with the flip animation.
+ * 
+ * Important: The flip mechanism is designed to visually represent the change before
+ * actually updating the data. This prevents visual glitches and ensures a smooth transition.
+ */
 
 const props = defineProps(['day'])
 const emit = defineEmits(['update:type', 'update:hours'])
 
-// State for UI interactions
+// UI state
 const showHoursSelector = ref(false)
 const isFlipped = ref(false)
-// Track the current work type independently of props
+
+// CRITICAL: This ref tracks the current work type independently of props
+// It's updated via a watcher when the prop changes, allowing for smooth transitions
 const currentType = ref(props.day.type)
 
-// Computed properties for formatting date information
+// Computed properties for date formatting
 const weekdayAbbreviation = computed(() => {
   const date = new Date(props.day.date)
   return date.toLocaleString('en-US', { weekday: 'short' })
@@ -59,62 +77,92 @@ const formattedDate = computed(() => {
   return date.toLocaleString('en-US', { month: 'short', day: 'numeric' })
 })
 
-// Compute the opposite work type for the flip animation
+/**
+ * Computed property that returns the opposite work type.
+ * This is used for the back face of the card during the flip animation.
+ * 
+ * @returns {string} The opposite work type ('home' or 'office')
+ */
 const flippedType = computed(() => currentType.value === 'home' ? 'office' : 'home')
 
-// Add emoji to work type for visual enhancement
+/**
+ * Adds an emoji to the work type for visual enhancement.
+ * 
+ * @param {string} type - The work type ('home' or 'office')
+ * @returns {string} Work type with emoji
+ */
 function workTypeWithEmoji(type) {
   return type === 'home' ? '🏠 Home' : '🏢 Office'
 }
 
-// Handle the card flip animation and type update
+/**
+ * Handles the card flip animation and type update.
+ * 
+ * IMPORTANT: This function is crucial for the correct behavior of the flip animation.
+ * It follows these steps:
+ * 1. Trigger the flip animation by toggling `isFlipped`.
+ * 2. Emit the type update after a delay, allowing the animation to reach its midpoint.
+ * 3. The actual data update occurs in the parent component, which then triggers the watcher.
+ * 
+ * This approach ensures that:
+ * - The visual flip occurs immediately, providing instant feedback to the user.
+ * - The data update happens at the right moment, preventing visual glitches.
+ * - The component remains reactive to external updates via the watcher.
+ */
 function flipCard() {
-  // Start the flip animation
-  isFlipped.value = true
+  isFlipped.value = !isFlipped.value
   
-  // Update the type and emit the change halfway through the animation
-  // This creates a smooth transition effect
   setTimeout(() => {
-    currentType.value = flippedType.value
-    emit('update:type', currentType.value)
-    // Reset the flip state to prepare for the next interaction
-    isFlipped.value = false
+    emit('update:type', flippedType.value)
   }, 150) // 150ms is half of the 300ms animation duration
 }
 
-// Toggle the hours selector, stopping event propagation to prevent card flip
+// Other utility functions
 function toggleHoursSelector(event) {
   event.stopPropagation()
   showHoursSelector.value = !showHoursSelector.value
 }
 
-// Update hours and close the selector
 function updateHours(newHours) {
   emit('update:hours', newHours)
 }
 
-// Format hours for display (e.g., "08:30")
 function formatHours(hours) {
   const wholeHours = Math.floor(hours)
   const minutes = (hours % 1) * 60
   return `${wholeHours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`
 }
+
+/**
+ * Watcher for changes in the day.type prop.
+ * This is crucial for maintaining consistency between props and local state.
+ * 
+ * When the parent component updates the type (as a result of our emit in flipCard),
+ * this watcher ensures that our local currentType ref is updated accordingly.
+ * This allows the component to react to both internal changes (via flipCard) 
+ * and external changes (via prop updates).
+ */
+watch(() => props.day.type, (newType) => {
+  currentType.value = newType
+})
 </script>
 
 <style scoped>
-/* Card container styles */
 .day-card-container {
-  position: relative;
-  margin-bottom: 16px;
+  width: calc(100% - 20px);
+  margin: 0 0 16px;
+  display: flex;
+  justify-content: center;
 }
 
-/* 3D space for the card flip animation */
 .day-card {
+  width: 100%;
+  max-width: 360px;
   perspective: 1000px;
   height: 60px;
+  margin: 0 auto;
 }
 
-/* Inner card container for 3D transform */
 .day-card-inner {
   position: relative;
   width: 100%;
@@ -124,12 +172,10 @@ function formatHours(hours) {
   transform-style: preserve-3d;
 }
 
-/* Apply 180-degree rotation when flipped */
 .day-card.is-flipped .day-card-inner {
   transform: rotateX(180deg);
 }
 
-/* Styles for both front and back faces */
 .day-card-face {
   position: absolute;
   width: 100%;
@@ -140,27 +186,36 @@ function formatHours(hours) {
   justify-content: space-between;
   padding: 0 12px;
   border-radius: 8px;
-  background-color: #f0f0f0;
+  border: 1px solid var(--card-border-color);
   box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  transition: background-color 0.3s ease;
 }
 
-/* Rotate back face to be hidden initially */
+.day-card-face.front {
+  transform: rotateX(0deg);
+}
+
 .day-card-face.back {
   transform: rotateX(180deg);
 }
 
-/* Layout for date information */
+.day-card-face.home {
+  background-color: var(--card-bg-color-home, #f4f8f0);
+}
+
+.day-card-face.office {
+  background-color: var(--card-bg-color-office, #f0f4f8);
+}
+
 .day-info {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
 }
 
-/* Typography styles */
 .weekday {
   font-size: 0.9em;
   font-weight: bold;
-  color: #333;
 }
 
 .date {
@@ -168,15 +223,12 @@ function formatHours(hours) {
   color: #666;
 }
 
-.work-type {
-  font-size: 1.1em;
+.work-type, .hours {
+  font-size: 1em;
   font-weight: bold;
-  text-transform: capitalize;
 }
 
 .hours {
-  font-size: 1em;
-  font-weight: bold;
   cursor: pointer;
 }
 </style>

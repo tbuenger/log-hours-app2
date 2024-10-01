@@ -1,43 +1,71 @@
-Log Hours App
+# Work Schedule Application
 
-Purpose
+## Overview
 
-The Log Hours App is a lightweight, mobile-friendly web application designed to track work-from-home and office hours. The primary goal is to help users monitor their daily work patterns and ensure that they meet required office time (e.g., 40% in-office work). The app leverages a simple and intuitive user interface, designed for easy logging and tracking of work hours, while remaining fully offline-capable using local storage.
+This Vue.js application provides a user-friendly interface for managing work schedules. It allows users to view and modify their work type (home or office) and work hours for each day of the month.
 
-Core Idea
+## Features
 
-The app provides users with a calendar-like interface to log whether they worked from home, the office, or took a day off (sick, vacation). Users can easily switch between these states, adjust hours for each day, and set recurring work patterns (e.g., always working from the office on Tuesdays). The app is a single-page application (SPA) built with Vue.js and Nuxt 3, leveraging local storage to save data locally on the user’s device, with no need for external databases.
+- Monthly calendar view
+- Flip animation to change work type (home/office)
+- Hours selector for adjusting work hours
+- Responsive design for mobile and desktop use
 
-Requirements
+## Components
 
-	•	Platform: Mobile web application, optimized for iPhone and capable of being added to the home screen.
-	•	Offline Support: All data is stored locally in the browser’s storage. The app is built as a Progressive Web App (PWA) with offline support.
-	•	Tech Stack:
-	•	Frontend: Vue 3, Nuxt 3
-	•	Hosting: Vercel for deployment
-	•	Storage: Local Storage (browser) for persisting user data
-	•	PWA: Fully offline-capable, installable as a mobile web app
+### 1. Index Page (`pages/index.vue`)
 
-Design Overview
+The main page component that displays the entire work schedule for a month. It includes:
+- A month picker for navigating between months
+- A grid of day cards representing each day of the month
 
-	•	Single Page Application (SPA): The entire app lives on a single page with dynamically loaded components. There are no multiple pages or server-side rendering.
-	•	Workday Cards: Each workday is displayed as a card with options to toggle between home, office, sick, or vacation. Users can adjust hours with a slider and set recurring work patterns.
-	•	Emphasis on Simplicity: The interface uses icons and minimal text to create an intuitive, user-friendly experience. Tapping and long-press interactions provide quick control over day types and hours worked.
+### 2. DayCard Component (`components/DayCard.vue`)
 
-Key Features
+Represents a single day in the work schedule. Features include:
+- Display of date, work type, and work hours
+- Flip animation to switch between home and office work types
+- Integration with HoursSelector for adjusting work hours
 
-	•	Day Cards: Each workday is represented as a full-width card with controls to toggle work type and adjust hours.
-	•	Recurring Patterns: Users can set specific days of the week to automatically repeat work patterns (e.g., always in the office on Mondays).
-	•	Icon-Based Navigation: Emojis are used to visually represent work types (e.g., 🏠 for home, 🏢 for office).
-	•	Data Persistence: All data is stored locally using browser storage, ensuring that user data is available offline and is device-specific.
-	•	PWA: The app can be installed on an iPhone home screen and works offline with cached assets.
+### 3. HoursSelector Component (`components/HoursSelector.vue`)
 
-Technical Requirements
+A modal component for selecting work hours. It provides:
+- A slider interface for easy hour selection
+- Confirmation and cancellation options
 
-	•	Nuxt 3 SPA: The app is built as a single-page application (SPA) with Nuxt 3 configured in spa mode for client-side rendering.
-	•	Local Storage: Data persistence is handled using the browser’s localStorage API. All logged hours and day types are saved locally and loaded on page load.
-	•	Vercel Deployment: The app is hosted and deployed via Vercel for easy updates and rapid global distribution.
+## Setup and Installation
 
-Project Setup
+1. Clone the repository:
+   ```
+   git clone https://github.com/your-username/work-schedule-app.git
+   ```
 
-	1.	Install dependencies:
+2. Navigate to the project directory:
+   ```
+   cd work-schedule-app
+   ```
+
+3. Install dependencies:
+   ```
+   npm install
+   ```
+
+4. Run the development server:
+   ```
+   npm run dev
+   ```
+
+5. Open your browser and visit `http://localhost:3000`
+
+## Usage
+
+- Use the month picker to navigate between months
+- Click on a day card to flip between home and office work types
+- Click on the hours display to open the hours selector and adjust work hours
+
+## Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+## License
+
+This project is licensed under the MIT License - see the LICENSE file for details.

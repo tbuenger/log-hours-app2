@@ -1,112 +1,141 @@
 <template>
-  <div class="hours-selector" @touchmove.prevent>
-    <div class="scroll-wheel" ref="scrollWheel" @touchstart="touchStart" @touchmove="touchMove" @touchend="touchEnd">
-      <div class="hour-option spacer"></div>
-      <div 
-        v-for="hour in hourOptions" 
-        :key="hour" 
-        class="hour-option"
-        :class="{ 'selected': isSelected(hour) }"
-      >
-        {{ formatHour(hour) }}
+  <div class="hours-selector-overlay" @click.self="close">
+    <div class="hours-selector">
+      <h3>Select Hours</h3>
+      <div class="slider-container">
+        <input 
+          type="range" 
+          min="0" 
+          max="24" 
+          step="0.5" 
+          v-model="selectedHours" 
+          @input="updateHours"
+        >
+        <div class="current-value">{{ formatHour(selectedHours) }}</div>
       </div>
-      <div class="hour-option spacer"></div>
+      <div class="buttons">
+        <button @click="close">Cancel</button>
+        <button @click="confirm">Confirm</button>
+      </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, watch } from 'vue';
+import { ref, onMounted } from 'vue';
+
+/**
+ * HoursSelector Component
+ * 
+ * This component provides a slider interface for selecting work hours.
+ * It allows users to choose hours in 0.5 hour increments from 0 to 24 hours.
+ */
 
 const props = defineProps(['hours']);
 const emit = defineEmits(['update:hours', 'close']);
 
-const scrollWheel = ref(null);
-const hourOptions = Array.from({ length: 48 }, (_, i) => i * 0.5);
+// Reactive reference to store the currently selected hours
+const selectedHours = ref(props.hours);
 
-const isSelected = (hour) => Math.abs(props.hours - hour) < 0.25;
-
+/**
+ * Formats the hour value for display.
+ * 
+ * @param {number} hour - The hour value to format
+ * @returns {string} Formatted hour string (e.g., "08:30")
+ */
 const formatHour = (hour) => {
   const wholeHours = Math.floor(hour);
   const minutes = (hour % 1) * 60;
   return `${wholeHours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
 };
 
-let startY = 0;
-let startScrollTop = 0;
-
-const touchStart = (e) => {
-  startY = e.touches[0].clientY;
-  startScrollTop = scrollWheel.value.scrollTop;
+/**
+ * Updates the hours value and emits the change to the parent component.
+ */
+const updateHours = () => {
+  emit('update:hours', parseFloat(selectedHours.value));
 };
 
-const touchMove = (e) => {
-  const deltaY = startY - e.touches[0].clientY;
-  scrollWheel.value.scrollTop = startScrollTop + deltaY;
+/**
+ * Closes the hours selector without saving changes.
+ */
+const close = () => {
+  emit('close');
 };
 
-const touchEnd = () => {
-  const selectedIndex = Math.round(scrollWheel.value.scrollTop / 40);
-  const selectedHour = hourOptions[selectedIndex];
-  emit('update:hours', selectedHour);
-  setTimeout(() => emit('close'), 300);
+/**
+ * Confirms the selected hours, updates the value, and closes the selector.
+ */
+const confirm = () => {
+  updateHours();
+  close();
 };
 
+// Initialize the selectedHours value when the component is mounted
 onMounted(() => {
-  const selectedIndex = hourOptions.findIndex(hour => isSelected(hour));
-  scrollWheel.value.scrollTop = selectedIndex * 40;
-});
-
-watch(() => props.hours, (newHours) => {
-  const selectedIndex = hourOptions.findIndex(hour => isSelected(newHours));
-  scrollWheel.value.scrollTop = selectedIndex * 40;
+  selectedHours.value = props.hours;
 });
 </script>
 
 <style scoped>
-.hours-selector {
-  position: absolute;
-  right: 10px;
-  bottom: 10px;
-  width: 80px;
-  height: 120px;
-  background-color: rgba(255, 255, 255, 0.9);
-  border-radius: 10px;
-  overflow: hidden;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-}
-
-.scroll-wheel {
-  height: 100%;
-  overflow-y: scroll;
-  -webkit-overflow-scrolling: touch;
-  scroll-snap-type: y mandatory;
-}
-
-.hour-option {
-  height: 40px;
+.hours-selector-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
   display: flex;
-  align-items: center;
   justify-content: center;
-  font-size: 18px;
-  scroll-snap-align: center;
+  align-items: center;
+  z-index: 1000;
 }
 
-.hour-option.spacer {
-  height: 40px;
+.hours-selector {
+  background-color: white;
+  padding: 20px;
+  border-radius: 10px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  width: 80%;
+  max-width: 300px;
 }
 
-.hour-option.selected {
+h3 {
+  margin-top: 0;
+  text-align: center;
+}
+
+.slider-container {
+  margin: 20px 0;
+}
+
+input[type="range"] {
+  width: 100%;
+  margin-bottom: 10px;
+}
+
+.current-value {
+  text-align: center;
+  font-size: 1.2em;
   font-weight: bold;
-  color: #007AFF;
 }
 
-/* Hide scrollbar */
-.scroll-wheel::-webkit-scrollbar {
-  display: none;
+.buttons {
+  display: flex;
+  justify-content: space-between;
 }
-.scroll-wheel {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
+
+button {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 5px;
+  background-color: #007AFF;
+  color: white;
+  font-size: 1em;
+  cursor: pointer;
+}
+
+button:first-child {
+  background-color: #888;
 }
 </style>
