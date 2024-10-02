@@ -17,7 +17,7 @@
             <div class="date">{{ formattedDate }}</div>
           </div>
           <div class="work-type">{{ workTypeWithEmoji(currentType) }}</div>
-          <div v-if="showHours" class="hours" :class="{ 'non-editable': !isEditable }" @click.stop="openTimeSelector" @mousedown.stop @touchstart.stop>
+          <div v-if="showHours" class="hours" :class="{ 'non-editable': !isEditable }" @click.stop="openTimeSelector" @touchstart.stop="handleHoursTouchStart" @touchend.stop="handleHoursTouchEnd">
             {{ formatHours(props.day.minutes) }}
           </div>
           <div v-else-if="props.day.isHoliday" class="holiday-name">{{ props.day.holidayName }}</div>
@@ -51,6 +51,7 @@ const currentType = ref(props.day.workType || 'home')
 const longPressTimer = ref(null)
 const longPressDuration = 500 // ms
 const isLongPress = ref(false)
+const touchStartTime = ref(0)
 
 const showHours = computed(() => currentType.value === 'office' || currentType.value === 'sick-vacation')
 const isEditable = computed(() => currentType.value === 'office')
@@ -97,29 +98,22 @@ function openTimeSelector(event) {
   event.preventDefault()
   if (isEditable.value) {
     showTimeSelector.value = true
-    // Cancel any ongoing long press
     cancelLongPress()
   }
 }
 
-function closeTimeSelector() {
-  showTimeSelector.value = false
+function handleHoursTouchStart(event) {
+  event.stopPropagation()
+  touchStartTime.value = Date.now()
 }
 
-function updateHours(newMinutes) {
-  if (isEditable.value) {
-    emit('update:hours', newMinutes)
-    closeTimeSelector()
+function handleHoursTouchEnd(event) {
+  event.stopPropagation()
+  event.preventDefault()
+  const touchDuration = Date.now() - touchStartTime.value
+  if (touchDuration < 500) { // Adjust this value if needed
+    openTimeSelector(event)
   }
-}
-
-function formatHours(minutes) {
-  if (currentType.value === 'sick-vacation') {
-    return '08:00' // Always display 8 hours for sick/vacation days
-  }
-  const hours = Math.floor(minutes / 60)
-  const mins = minutes % 60
-  return `${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`
 }
 
 function handleMouseDown(event) {
@@ -136,6 +130,7 @@ function handleMouseDown(event) {
 function handleTouchStart(event) {
   if (props.day.isHoliday || showTimeSelector.value) return
   event.preventDefault()
+  touchStartTime.value = Date.now()
   handleMouseDown(event)
 }
 
@@ -158,7 +153,10 @@ function handleMouseUp(event) {
 
 function handleTouchEnd(event) {
   event.preventDefault()
-  handleMouseUp(event)
+  const touchDuration = Date.now() - touchStartTime.value
+  if (touchDuration < 500) { // Adjust this value if needed
+    handleMouseUp(event)
+  }
 }
 
 function cancelLongPress() {
@@ -176,6 +174,27 @@ watch(() => props.day.workType, (newType) => {
 onMounted(() => {
   currentType.value = props.day.workType || 'home'
 })
+
+function formatHours(minutes) {
+  if (currentType.value === 'sick-vacation') {
+    return '08:00' // Always display 8 hours for sick/vacation days
+  }
+  const hours = Math.floor(minutes / 60)
+  const mins = minutes % 60
+  return `${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`
+}
+
+function updateHours(newMinutes) {
+  if (isEditable.value) {
+    emit('update:hours', newMinutes)
+    closeTimeSelector()
+  }
+}
+
+function closeTimeSelector() {
+  showTimeSelector.value = false
+}
+
 </script>
 
 <style scoped>

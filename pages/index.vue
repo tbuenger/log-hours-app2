@@ -70,6 +70,7 @@ const storeData = (date, data) => {
 const daysAndDividers = ref([])
 
 const updateDaysAndDividers = () => {
+  console.log('Updating days and dividers')
   const year = currentDate.value.getFullYear()
   const month = currentDate.value.getMonth()
   const daysInMonthCount = new Date(year, month + 1, 0).getDate()
@@ -113,6 +114,7 @@ const updateDaysAndDividers = () => {
     }
   }
 
+  console.log('Generated days and dividers:', items)
   daysAndDividers.value = items
 }
 
