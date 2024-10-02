@@ -5,10 +5,10 @@
       :class="{ 'is-flipped': isFlipped, 'is-holiday': props.day.isHoliday, 'is-sick-vacation': currentType === 'sick-vacation' }" 
       @mousedown="handleMouseDown"
       @mouseup="handleMouseUp"
-      @mouseleave="clearTimeout(longPressTimer.value)"
+      @mouseleave="handleMouseLeave"
       @touchstart.passive="handleTouchStart"
       @touchend="handleTouchEnd"
-      @touchcancel="clearTimeout(longPressTimer.value)"
+      @touchcancel="handleTouchCancel"
     >
       <div class="day-card-inner">
         <div class="day-card-face front" :class="currentType">
@@ -131,7 +131,7 @@ function handleTouchStart(event) {
   touchStartY.value = event.touches[0].clientY
   touchStartX.value = event.touches[0].clientX
   
-  longPressTimer.value = setTimeout(() => {
+  longPressTimer.value = window.setTimeout(() => {
     handleLongPress()
   }, longPressDuration)
 }
@@ -146,7 +146,10 @@ function handleTouchEnd(event) {
   const verticalDistance = Math.abs(touchEndY - touchStartY.value)
   const horizontalDistance = Math.abs(touchEndX - touchStartX.value)
 
-  clearTimeout(longPressTimer.value)
+  if (longPressTimer.value) {
+    window.clearTimeout(longPressTimer.value)
+    longPressTimer.value = null
+  }
 
   if (touchDuration < 300 && verticalDistance < 10 && horizontalDistance < 10) {
     handleTap(event)
@@ -199,15 +202,32 @@ function closeTimeSelector() {
 function handleMouseDown(event) {
   if (props.day.isHoliday || showTimeSelector.value) return
   if (!event.target.classList.contains('hours')) {
-    longPressTimer.value = setTimeout(() => {
+    longPressTimer.value = window.setTimeout(() => {
       handleLongPress()
     }, longPressDuration)
   }
 }
 
 function handleMouseUp(event) {
-  clearTimeout(longPressTimer.value)
+  if (longPressTimer.value) {
+    window.clearTimeout(longPressTimer.value)
+    longPressTimer.value = null
+  }
   handleTap(event)
+}
+
+function handleMouseLeave() {
+  if (longPressTimer.value) {
+    window.clearTimeout(longPressTimer.value)
+    longPressTimer.value = null
+  }
+}
+
+function handleTouchCancel() {
+  if (longPressTimer.value) {
+    window.clearTimeout(longPressTimer.value)
+    longPressTimer.value = null
+  }
 }
 
 </script>
