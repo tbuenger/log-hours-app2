@@ -7,7 +7,7 @@
       @mouseup="handleMouseUp"
       @mouseleave="cancelLongPress"
       @touchstart.passive="handleTouchStart"
-      @touchend.prevent="handleTouchEnd"
+      @touchend="handleTouchEnd"
       @touchcancel="cancelLongPress"
     >
       <div class="day-card-inner">
@@ -17,7 +17,14 @@
             <div class="date">{{ formattedDate }}</div>
           </div>
           <div class="work-type">{{ workTypeWithEmoji(currentType) }}</div>
-          <div v-if="showHours" class="hours" :class="{ 'non-editable': !isEditable }" @click.stop="openTimeSelector" @touchstart.stop="handleHoursTouchStart" @touchend.stop="handleHoursTouchEnd">
+          <div 
+            v-if="showHours" 
+            class="hours" 
+            :class="{ 'non-editable': !isEditable }" 
+            @click.stop="openTimeSelector"
+            @touchstart.stop="handleHoursTouchStart"
+            @touchend.stop="handleHoursTouchEnd"
+          >
             {{ formatHours(props.day.minutes) }}
           </div>
           <div v-else-if="props.day.isHoliday" class="holiday-name">{{ props.day.holidayName }}</div>
@@ -122,20 +129,36 @@ function handleTouchStart(event) {
   touchStartTime.value = Date.now()
   touchStartY.value = event.touches[0].clientY
   touchStartX.value = event.touches[0].clientX
+  
+  // Start long press timer
+  longPressTimer.value = setTimeout(() => {
+    handleLongPress()
+  }, longPressDuration)
 }
 
 function handleTouchEnd(event) {
+  if (event.cancelable) {
+    event.preventDefault();
+  }
   const touchEndY = event.changedTouches[0].clientY
   const touchEndX = event.changedTouches[0].clientX
   const touchDuration = Date.now() - touchStartTime.value
   const verticalDistance = Math.abs(touchEndY - touchStartY.value)
   const horizontalDistance = Math.abs(touchEndX - touchStartX.value)
 
+  // Clear long press timer
+  clearTimeout(longPressTimer.value)
+
   // If it's a short touch and there's minimal movement, treat it as a tap
   if (touchDuration < 300 && verticalDistance < 10 && horizontalDistance < 10) {
     handleTap()
   }
   // Otherwise, it's likely a scroll or some other gesture, so do nothing
+}
+
+function handleLongPress() {
+  const newType = currentType.value === 'sick-vacation' ? 'home' : 'sick-vacation'
+  flipCard(newType)
 }
 
 function handleTap() {
@@ -145,11 +168,7 @@ function handleTap() {
 }
 
 function cancelLongPress() {
-  if (longPressTimer.value) {
-    clearTimeout(longPressTimer.value)
-    longPressTimer.value = null
-  }
-  isLongPress.value = false
+  clearTimeout(longPressTimer.value)
 }
 
 watch(() => props.day.workType, (newType) => {
@@ -178,6 +197,22 @@ function updateHours(newMinutes) {
 
 function closeTimeSelector() {
   showTimeSelector.value = false
+}
+
+// Add these mouse event handlers to support desktop long-press
+function handleMouseDown(event) {
+  if (props.day.isHoliday || showTimeSelector.value) return
+  longPressTimer.value = setTimeout(() => {
+    handleLongPress()
+  }, longPressDuration)
+}
+
+function handleMouseUp(event) {
+  clearTimeout(longPressTimer.value)
+  if (!isLongPress.value) {
+    handleTap()
+  }
+  isLongPress.value = false
 }
 
 </script>
