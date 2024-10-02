@@ -3,10 +3,10 @@
     <div 
       class="day-card" 
       :class="{ 'is-flipped': isFlipped, 'is-holiday': props.day.isHoliday, 'is-sick-vacation': currentType === 'sick-vacation' }" 
-      @mousedown="startLongPress"
+      @mousedown="handleMouseDown"
       @mouseup="handleMouseUp"
       @mouseleave="cancelLongPress"
-      @touchstart="startLongPress"
+      @touchstart="handleTouchStart"
       @touchend="handleTouchEnd"
       @touchcancel="cancelLongPress"
     >
@@ -17,8 +17,8 @@
             <div class="date">{{ formattedDate }}</div>
           </div>
           <div class="work-type">{{ workTypeWithEmoji(currentType) }}</div>
-          <div v-if="showHours" class="hours" :class="{ 'non-editable': !isEditable }" @click.stop="toggleTimeSelector">
-            {{ formatHours(props.day.hours) }}
+          <div v-if="showHours" class="hours" :class="{ 'non-editable': !isEditable }" @click.stop="openTimeSelector" @mousedown.stop @touchstart.stop>
+            {{ formatHours(props.day.minutes) }}
           </div>
           <div v-else-if="props.day.isHoliday" class="holiday-name">{{ props.day.holidayName }}</div>
           <div v-else class="hours-placeholder"></div>
@@ -30,11 +30,10 @@
     </div>
     <TimeSelector 
       v-if="showTimeSelector" 
-      :initialHours="Math.floor(props.day.hours)"
-      :initialMinutes="Math.round((props.day.hours % 1) * 60)"
+      :initialMinutes="props.day.minutes"
       :date="props.day.date"
       @update:time="updateHours" 
-      @close="showTimeSelector = false"
+      @close="closeTimeSelector"
     />
   </div>
 </template>
@@ -87,32 +86,44 @@ function flipCard(newType) {
     currentType.value = newType
     emit('update:type', currentType.value)
     if (currentType.value === 'sick-vacation') {
-      emit('update:hours', 8)
+      emit('update:hours', 480) // 8 hours = 480 minutes
     }
     isFlipped.value = false
   }, 150)
 }
 
-function toggleTimeSelector(event) {
-  if (!isEditable.value) return
+function openTimeSelector(event) {
   event.stopPropagation()
-  showTimeSelector.value = !showTimeSelector.value
+  event.preventDefault()
+  if (isEditable.value) {
+    showTimeSelector.value = true
+    // Cancel any ongoing long press
+    cancelLongPress()
+  }
 }
 
-function updateHours(newHours) {
-  if (!isEditable.value) return
-  emit('update:hours', newHours)
+function closeTimeSelector() {
   showTimeSelector.value = false
 }
 
-function formatHours(hours) {
-  const wholeHours = Math.floor(hours)
-  const minutes = (hours % 1) * 60
-  return `${wholeHours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`
+function updateHours(newMinutes) {
+  if (isEditable.value) {
+    emit('update:hours', newMinutes)
+    closeTimeSelector()
+  }
 }
 
-function startLongPress(event) {
-  if (props.day.isHoliday) return
+function formatHours(minutes) {
+  if (currentType.value === 'sick-vacation') {
+    return '08:00' // Always display 8 hours for sick/vacation days
+  }
+  const hours = Math.floor(minutes / 60)
+  const mins = minutes % 60
+  return `${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`
+}
+
+function handleMouseDown(event) {
+  if (props.day.isHoliday || showTimeSelector.value) return
   event.preventDefault()
   isLongPress.value = false
   longPressTimer.value = setTimeout(() => {
@@ -122,8 +133,14 @@ function startLongPress(event) {
   }, longPressDuration)
 }
 
+function handleTouchStart(event) {
+  if (props.day.isHoliday || showTimeSelector.value) return
+  event.preventDefault()
+  handleMouseDown(event)
+}
+
 function handleMouseUp(event) {
-  if (props.day.isHoliday) return
+  if (props.day.isHoliday || showTimeSelector.value) return
   
   if (longPressTimer.value) {
     clearTimeout(longPressTimer.value)
@@ -141,20 +158,7 @@ function handleMouseUp(event) {
 
 function handleTouchEnd(event) {
   event.preventDefault()
-  if (props.day.isHoliday) return
-  
-  if (longPressTimer.value) {
-    clearTimeout(longPressTimer.value)
-    longPressTimer.value = null
-    
-    if (!isLongPress.value) {
-      // This was a short press, so flip the card
-      const newType = currentType.value === 'home' ? 'office' : 'home'
-      flipCard(newType)
-    }
-  }
-  
-  isLongPress.value = false
+  handleMouseUp(event)
 }
 
 function cancelLongPress() {

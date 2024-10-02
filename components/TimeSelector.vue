@@ -4,15 +4,31 @@
       <h2>{{ formattedDate }}</h2>
       <div class="time-picker">
         <div class="time-column">
-          <button @click="incrementHours">▲</button>
-          <span>{{ String(hours).padStart(2, '0') }}</span>
-          <button @click="decrementHours">▼</button>
+          <div class="scroll-container" ref="hoursContainer" @wheel="handleWheel('hours', $event)">
+            <div 
+              v-for="h in 24" 
+              :key="`hour-${h-1}`" 
+              class="time-item" 
+              :class="{ 'selected': h - 1 === hours }"
+              @click="setHours(h - 1)"
+            >
+              {{ String(h - 1).padStart(2, '0') }}
+            </div>
+          </div>
         </div>
         <div class="time-separator">:</div>
         <div class="time-column">
-          <button @click="incrementMinutes">▲</button>
-          <span>{{ String(minutes).padStart(2, '0') }}</span>
-          <button @click="decrementMinutes">▼</button>
+          <div class="scroll-container" ref="minutesContainer" @wheel="handleWheel('minutes', $event)">
+            <div 
+              v-for="m in 60" 
+              :key="`minute-${m-1}`" 
+              class="time-item" 
+              :class="{ 'selected': m - 1 === minutes }"
+              @click="setMinutes(m - 1)"
+            >
+              {{ String(m - 1).padStart(2, '0') }}
+            </div>
+          </div>
         </div>
       </div>
       <div class="buttons">
@@ -24,16 +40,12 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted, nextTick } from 'vue';
 
 const props = defineProps({
-  initialHours: {
-    type: Number,
-    default: 8
-  },
   initialMinutes: {
     type: Number,
-    default: 0
+    default: 480
   },
   date: {
     type: String,
@@ -43,37 +55,57 @@ const props = defineProps({
 
 const emit = defineEmits(['update:time', 'close']);
 
-const hours = ref(props.initialHours);
-const minutes = ref(props.initialMinutes);
+const hours = ref(Math.floor(props.initialMinutes / 60));
+const minutes = ref(props.initialMinutes % 60);
+const hoursContainer = ref(null);
+const minutesContainer = ref(null);
 
 const formattedDate = computed(() => {
   return new Date(props.date).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
 });
 
-function incrementHours() {
-  hours.value = (hours.value + 1) % 24;
+function setHours(newHours) {
+  hours.value = newHours;
+  scrollToSelected(hoursContainer.value, newHours);
 }
 
-function decrementHours() {
-  hours.value = (hours.value - 1 + 24) % 24;
+function setMinutes(newMinutes) {
+  minutes.value = newMinutes;
+  scrollToSelected(minutesContainer.value, newMinutes);
 }
 
-function incrementMinutes() {
-  minutes.value = (minutes.value + 1) % 60;
+function handleWheel(type, event) {
+  event.preventDefault();
+  const delta = Math.sign(event.deltaY);
+  if (type === 'hours') {
+    setHours((hours.value + delta + 24) % 24);
+  } else {
+    setMinutes((minutes.value + delta + 60) % 60);
+  }
 }
 
-function decrementMinutes() {
-  minutes.value = (minutes.value - 1 + 60) % 60;
+function scrollToSelected(container, index) {
+  if (container) {
+    const itemHeight = container.children[0].offsetHeight;
+    container.scrollTop = index * itemHeight - container.offsetHeight / 2 + itemHeight / 2;
+  }
 }
 
 function confirm() {
-  emit('update:time', hours.value + minutes.value / 60);
+  emit('update:time', hours.value * 60 + minutes.value);
   emit('close');
 }
 
 function cancel() {
   emit('close');
 }
+
+onMounted(() => {
+  nextTick(() => {
+    scrollToSelected(hoursContainer.value, hours.value);
+    scrollToSelected(minutesContainer.value, minutes.value);
+  });
+});
 </script>
 
 <style scoped>
@@ -105,21 +137,30 @@ function cancel() {
 }
 
 .time-column {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+  width: 60px;
+  height: 180px;
+  overflow: hidden;
 }
 
-.time-column button {
-  background: none;
-  border: none;
+.scroll-container {
+  height: 100%;
+  overflow-y: auto;
+  scroll-snap-type: y mandatory;
+}
+
+.time-item {
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   font-size: 24px;
+  scroll-snap-align: center;
   cursor: pointer;
 }
 
-.time-column span {
-  font-size: 36px;
-  margin: 10px 0;
+.time-item.selected {
+  background-color: #e0e0e0;
+  font-weight: bold;
 }
 
 .time-separator {
@@ -130,6 +171,7 @@ function cancel() {
 .buttons {
   display: flex;
   justify-content: space-around;
+  margin-top: 20px;
 }
 
 .buttons button {
@@ -147,5 +189,16 @@ function cancel() {
 .buttons button:last-child {
   background-color: #f44336;
   color: white;
+}
+
+/* Hide scrollbar for Chrome, Safari and Opera */
+.scroll-container::-webkit-scrollbar {
+  display: none;
+}
+
+/* Hide scrollbar for IE, Edge and Firefox */
+.scroll-container {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
 }
 </style>

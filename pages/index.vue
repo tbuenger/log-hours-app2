@@ -3,6 +3,9 @@
     <div class="progress-bar-container">
       <div class="progress-bar" :style="{ width: officePercentage + '%', backgroundColor: progressBarColor }"></div>
       <span class="progress-text">{{ officePercentage.toFixed(1) }}% Office Time</span>
+      <span class="remaining-time" v-if="remainingTime > 0">
+        {{ formatRemainingTime(remainingTime) }} to reach 40%
+      </span>
     </div>
     <div class="month-picker">
       <button @click="changeMonth(-1)">Previous</button>
@@ -50,7 +53,7 @@ const updateTrigger = ref(0)
 // Function to get stored data from local storage
 const getStoredData = (date) => {
   const storedData = localStorage.getItem(date)
-  return storedData ? JSON.parse(storedData) : { type: 'home', hours: 8 }  // Changed default to 'home'
+  return storedData ? JSON.parse(storedData) : { type: 'home', minutes: 480 }  // 8 hours = 480 minutes
 }
 
 // Function to store data in local storage
@@ -101,7 +104,7 @@ const updateDaysAndDividers = () => {
         type: 'day',
         date: dateString,
         workType: holidayName ? 'holiday' : storedData.type,
-        hours: holidayName ? 8 : storedData.hours,
+        minutes: holidayName ? 480 : storedData.minutes,
         isHoliday: !!holidayName,
         holidayName: holidayName
       })
@@ -139,17 +142,41 @@ const officePercentage = computed(() => {
   const workingDays = daysAndDividers.value.filter(item => 
     item.type === 'day' && !item.isHoliday
   )
-  const totalWorkHours = workingDays.length * 8 // 8 hours per working day
-  const officeHours = workingDays.reduce((sum, day) => {
+  const totalWorkMinutes = workingDays.length * 480 // 8 hours = 480 minutes per working day
+  const officeMinutes = workingDays.reduce((sum, day) => {
     if (day.workType === 'office') {
-      return sum + day.hours
+      return sum + day.minutes
     } else if (day.workType === 'sick-vacation') {
-      return sum + 8
+      return sum + 480
     }
     return sum
   }, 0)
-  return totalWorkHours > 0 ? (officeHours / totalWorkHours) * 100 : 0
+  return totalWorkMinutes > 0 ? (officeMinutes / totalWorkMinutes) * 100 : 0
 })
+
+const remainingTime = computed(() => {
+  if (officePercentage.value >= 40) return 0
+  const workingDays = daysAndDividers.value.filter(item => 
+    item.type === 'day' && !item.isHoliday
+  )
+  const totalWorkMinutes = workingDays.length * 480
+  const currentOfficeMinutes = workingDays.reduce((sum, day) => {
+    if (day.workType === 'office') {
+      return sum + day.minutes
+    } else if (day.workType === 'sick-vacation') {
+      return sum + 480
+    }
+    return sum
+  }, 0)
+  const requiredOfficeMinutes = totalWorkMinutes * 0.4
+  return Math.max(0, Math.ceil(requiredOfficeMinutes - currentOfficeMinutes))
+})
+
+function formatRemainingTime(minutes) {
+  const hours = Math.floor(minutes / 60)
+  const mins = minutes % 60
+  return `${hours}h ${mins}m`
+}
 
 /**
  * Computed property that determines the color of the progress bar.
@@ -183,9 +210,9 @@ function updateDayType(date, newType) {
   if (dayIndex !== -1) {
     daysAndDividers.value[dayIndex].workType = newType
     if (newType === 'sick-vacation') {
-      daysAndDividers.value[dayIndex].hours = 8
+      daysAndDividers.value[dayIndex].minutes = 480
     }
-    storeData(date, { type: newType, hours: daysAndDividers.value[dayIndex].hours })
+    storeData(date, { type: newType, minutes: daysAndDividers.value[dayIndex].minutes })
   }
 }
 
@@ -193,13 +220,13 @@ function updateDayType(date, newType) {
  * Updates the work hours for a specific day and stores it in local storage.
  * 
  * @param {string} date - The date in ISO format (YYYY-MM-DD)
- * @param {number} newHours - The new work hours
+ * @param {number} newMinutes - The new work minutes
  */
-function updateDayHours(date, newHours) {
+function updateDayHours(date, newMinutes) {
   const dayIndex = daysAndDividers.value.findIndex(item => item.type === 'day' && item.date === date)
   if (dayIndex !== -1) {
-    daysAndDividers.value[dayIndex].hours = newHours
-    storeData(date, { type: daysAndDividers.value[dayIndex].workType, hours: newHours })
+    daysAndDividers.value[dayIndex].minutes = newMinutes
+    storeData(date, { type: daysAndDividers.value[dayIndex].workType, minutes: newMinutes })
   }
 }
 
@@ -324,5 +351,12 @@ onMounted(() => {
 
 .reset-buttons button:hover {
   background-color: #c0392b;
+}
+
+.remaining-time {
+  position: absolute;
+  right: 20px;
+  font-weight: bold;
+  color: #333;
 }
 </style>
