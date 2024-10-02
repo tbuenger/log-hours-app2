@@ -131,7 +131,7 @@ const currentMonthYear = computed(() => {
 
 /**
  * Computed property that calculates the office time percentage.
- * This property now depends on both the work type and hours of each day.
+ * This property now includes sick/vacation days as office time.
  * 
  * @returns {number} Percentage of office time
  */
@@ -139,7 +139,12 @@ const officePercentage = computed(() => {
   const workingDays = daysAndDividers.value.filter(item => item.type === 'day')
   const totalWorkHours = workingDays.length * 8 // 8 hours per working day
   const officeHours = workingDays.reduce((sum, day) => {
-    return sum + ((day.workType === 'office' || day.workType === 'holiday') ? day.hours : 0)
+    if (day.workType === 'office') {
+      return sum + day.hours
+    } else if (day.workType === 'holiday' || day.workType === 'sick-vacation') {
+      return sum + 8
+    }
+    return sum
   }, 0)
   return (officeHours / totalWorkHours) * 100
 })
@@ -175,6 +180,9 @@ function updateDayType(date, newType) {
   const dayIndex = daysAndDividers.value.findIndex(item => item.type === 'day' && item.date === date)
   if (dayIndex !== -1) {
     daysAndDividers.value[dayIndex].workType = newType
+    if (newType === 'sick-vacation') {
+      daysAndDividers.value[dayIndex].hours = 8
+    }
     storeData(date, { type: newType, hours: daysAndDividers.value[dayIndex].hours })
   }
 }
