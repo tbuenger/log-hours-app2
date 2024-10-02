@@ -3,10 +3,7 @@
     <div 
       class="day-card" 
       :class="{ 'is-flipped': isFlipped, 'is-holiday': props.day.isHoliday, 'is-sick-vacation': currentType === 'sick-vacation' }" 
-      @mousedown="handleTouchStart"
-      @mouseup="handleTouchEnd"
-      @mouseleave="handleTouchCancel"
-      @touchstart.passive="handleTouchStart"
+      @touchstart="handleTouchStart"
       @touchend="handleTouchEnd"
       @touchcancel="handleTouchCancel"
     >
@@ -56,12 +53,10 @@ const emit = defineEmits(['update:type', 'update:hours'])
 const showTimeSelector = ref(false)
 const isFlipped = ref(false)
 const currentType = ref(props.day.workType || 'home')
+
 const longPressTimer = ref(null)
 const longPressDuration = 500 // ms
 const touchStartTime = ref(0)
-const touchStartY = ref(0)
-const touchStartX = ref(0)
-const isLongPress = ref(false)
 
 const showHours = computed(() => currentType.value === 'office' || currentType.value === 'sick-vacation')
 const isEditable = computed(() => currentType.value === 'office')
@@ -103,13 +98,48 @@ function flipCard(newType) {
   }, 150)
 }
 
+function handleTouchStart(event) {
+  if (props.day.isHoliday || showTimeSelector.value) return
+  
+  touchStartTime.value = Date.now()
+  
+  longPressTimer.value = setTimeout(() => {
+    const newType = currentType.value === 'sick-vacation' ? 'home' : 'sick-vacation'
+    flipCard(newType)
+    longPressTimer.value = null
+  }, longPressDuration)
+}
+
+function handleTouchEnd(event) {
+  if (props.day.isHoliday || showTimeSelector.value) return
+  
+  const touchDuration = Date.now() - touchStartTime.value
+  
+  if (longPressTimer.value) {
+    clearTimeout(longPressTimer.value)
+    longPressTimer.value = null
+    
+    if (touchDuration < longPressDuration) {
+      if (event.target.classList.contains('hours') && isEditable.value) {
+        openTimeSelector(event)
+      } else {
+        const newType = currentType.value === 'home' ? 'office' : 'home'
+        flipCard(newType)
+      }
+    }
+  }
+}
+
+function handleTouchCancel() {
+  if (longPressTimer.value) {
+    clearTimeout(longPressTimer.value)
+    longPressTimer.value = null
+  }
+}
+
 function openTimeSelector(event) {
   event.stopPropagation()
-  event.preventDefault()
-  if (isEditable.value) {
-    showTimeSelector.value = true
-    clearTimeout(longPressTimer.value)
-  }
+  showTimeSelector.value = true
 }
 
 function handleHoursTouchStart(event) {
@@ -124,72 +154,6 @@ function handleHoursTouchEnd(event) {
   if (touchDuration < 300) {
     openTimeSelector(event)
   }
-}
-
-const handleInteraction = (event, interactionType) => {
-  if (props.day.isHoliday || showTimeSelector.value) return
-
-  if (interactionType === 'tap' && !isLongPress.value) {
-    if (event.target.classList.contains('hours')) {
-      openTimeSelector(event)
-    } else {
-      const newType = currentType.value === 'home' ? 'office' : 'home'
-      flipCard(newType)
-    }
-  } else if (interactionType === 'longPress') {
-    isLongPress.value = true
-    const newType = currentType.value === 'sick-vacation' ? 'home' : 'sick-vacation'
-    flipCard(newType)
-  }
-}
-
-const clearLongPressTimer = () => {
-  if (longPressTimer.value) {
-    window.clearTimeout(longPressTimer.value)
-    longPressTimer.value = null
-  }
-}
-
-function handleTouchStart(event) {
-  if (props.day.isHoliday || showTimeSelector.value) return
-  
-  touchStartTime.value = Date.now()
-  isLongPress.value = false
-  
-  longPressTimer.value = setTimeout(() => {
-    isLongPress.value = true
-    const newType = currentType.value === 'sick-vacation' ? 'home' : 'sick-vacation'
-    flipCard(newType)
-  }, longPressDuration)
-}
-
-function handleTouchEnd(event) {
-  if (event.cancelable) {
-    event.preventDefault()
-  }
-  
-  clearTimeout(longPressTimer.value)
-  
-  const touchDuration = Date.now() - touchStartTime.value
-  
-  if (touchDuration < 300 && !isLongPress.value) {
-    if (event.target.classList.contains('hours')) {
-      openTimeSelector(event)
-    } else {
-      const newType = currentType.value === 'home' ? 'office' : 'home'
-      flipCard(newType)
-    }
-  }
-  
-  // Reset the long press flag after a short delay
-  setTimeout(() => {
-    isLongPress.value = false
-  }, 50)
-}
-
-function handleTouchCancel() {
-  clearTimeout(longPressTimer.value)
-  isLongPress.value = false
 }
 
 watch(() => props.day.workType, (newType) => {
