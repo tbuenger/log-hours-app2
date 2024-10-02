@@ -23,7 +23,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue'
+import { onMounted, watch } from 'vue'
 import { useWorkSchedule } from '~/composables/useWorkSchedule'
 import ProgressBar from '~/components/ProgressBar.vue'
 import MonthPicker from '~/components/MonthPicker.vue'

@@ -125,15 +125,36 @@ function handleHoursTouchEnd(event) {
   }
 }
 
+const handleInteraction = (event, interactionType) => {
+  if (props.day.isHoliday || showTimeSelector.value) return
+
+  if (interactionType === 'tap') {
+    if (event.target.classList.contains('hours')) {
+      openTimeSelector(event)
+    } else {
+      const newType = currentType.value === 'home' ? 'office' : 'home'
+      flipCard(newType)
+    }
+  } else if (interactionType === 'longPress') {
+    const newType = currentType.value === 'sick-vacation' ? 'home' : 'sick-vacation'
+    flipCard(newType)
+  }
+}
+
+const clearLongPressTimer = () => {
+  if (longPressTimer.value) {
+    window.clearTimeout(longPressTimer.value)
+    longPressTimer.value = null
+  }
+}
+
 function handleTouchStart(event) {
   if (props.day.isHoliday || showTimeSelector.value) return
   touchStartTime.value = Date.now()
   touchStartY.value = event.touches[0].clientY
   touchStartX.value = event.touches[0].clientX
   
-  longPressTimer.value = window.setTimeout(() => {
-    handleLongPress()
-  }, longPressDuration)
+  longPressTimer.value = window.setTimeout(() => handleInteraction(event, 'longPress'), longPressDuration)
 }
 
 function handleTouchEnd(event) {
@@ -146,30 +167,27 @@ function handleTouchEnd(event) {
   const verticalDistance = Math.abs(touchEndY - touchStartY.value)
   const horizontalDistance = Math.abs(touchEndX - touchStartX.value)
 
-  if (longPressTimer.value) {
-    window.clearTimeout(longPressTimer.value)
-    longPressTimer.value = null
-  }
+  clearLongPressTimer()
 
   if (touchDuration < 300 && verticalDistance < 10 && horizontalDistance < 10) {
-    handleTap(event)
+    handleInteraction(event, 'tap')
   }
 }
 
-function handleLongPress() {
-  const newType = currentType.value === 'sick-vacation' ? 'home' : 'sick-vacation'
-  flipCard(newType)
-}
-
-function handleTap(event) {
+function handleMouseDown(event) {
   if (props.day.isHoliday || showTimeSelector.value) return
-  if (event.target.classList.contains('hours')) {
-    openTimeSelector(event)
-  } else {
-    const newType = currentType.value === 'home' ? 'office' : 'home'
-    flipCard(newType)
+  if (!event.target.classList.contains('hours')) {
+    longPressTimer.value = window.setTimeout(() => handleInteraction(event, 'longPress'), longPressDuration)
   }
 }
+
+function handleMouseUp(event) {
+  clearLongPressTimer()
+  handleInteraction(event, 'tap')
+}
+
+const handleMouseLeave = clearLongPressTimer
+const handleTouchCancel = clearLongPressTimer
 
 watch(() => props.day.workType, (newType) => {
   currentType.value = newType
@@ -198,38 +216,6 @@ function updateHours(newMinutes) {
 function closeTimeSelector() {
   showTimeSelector.value = false
 }
-
-function handleMouseDown(event) {
-  if (props.day.isHoliday || showTimeSelector.value) return
-  if (!event.target.classList.contains('hours')) {
-    longPressTimer.value = window.setTimeout(() => {
-      handleLongPress()
-    }, longPressDuration)
-  }
-}
-
-function handleMouseUp(event) {
-  if (longPressTimer.value) {
-    window.clearTimeout(longPressTimer.value)
-    longPressTimer.value = null
-  }
-  handleTap(event)
-}
-
-function handleMouseLeave() {
-  if (longPressTimer.value) {
-    window.clearTimeout(longPressTimer.value)
-    longPressTimer.value = null
-  }
-}
-
-function handleTouchCancel() {
-  if (longPressTimer.value) {
-    window.clearTimeout(longPressTimer.value)
-    longPressTimer.value = null
-  }
-}
-
 </script>
 
 <style scoped>

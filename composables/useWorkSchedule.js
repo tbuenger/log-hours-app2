@@ -14,57 +14,8 @@ export function useWorkSchedule() {
     localStorage.setItem(date, JSON.stringify(data))
   }
 
-  const updateDaysAndDividers = () => {
-    const year = currentDate.value.getFullYear()
-    const month = currentDate.value.getMonth()
-    const daysInMonthCount = new Date(year, month + 1, 0).getDate()
-    
-    const items = []
-    let currentWeek = null
-    let firstWorkdayFound = false
-
-    for (let i = 1; i <= daysInMonthCount; i++) {
-      const date = new Date(year, month, i)
-      const dayOfWeek = date.getDay()
-      const weekNumber = getWeekNumber(date)
-
-      if (dayOfWeek >= 1 && dayOfWeek <= 5 || isHoliday(date.toISOString().split('T')[0])) {
-        if (weekNumber !== currentWeek && firstWorkdayFound) {
-          items.push({ type: 'divider', weekNumber })
-        }
-        
-        if (!firstWorkdayFound) {
-          firstWorkdayFound = true
-          items.push({ type: 'divider', weekNumber })
-        }
-
-        currentWeek = weekNumber
-
-        date.setMinutes(date.getMinutes() - date.getTimezoneOffset())
-        const dateString = date.toISOString().split('T')[0]
-        const storedData = getStoredData(dateString)
-        const holidayName = getHolidayName(dateString)
-
-        items.push({
-          type: 'day',
-          date: dateString,
-          workType: holidayName ? 'holiday' : storedData.type,
-          minutes: holidayName ? 480 : storedData.minutes,
-          isHoliday: !!holidayName,
-          holidayName: holidayName
-        })
-      }
-    }
-
-    daysAndDividers.value = items
-  }
-
-  const officePercentage = computed(() => {
-    const workingDays = daysAndDividers.value.filter(item => 
-      item.type === 'day' && !item.isHoliday
-    )
-    const totalWorkMinutes = workingDays.length * 480
-    const officeMinutes = workingDays.reduce((sum, day) => {
+  const calculateWorkMinutes = (workingDays) => {
+    return workingDays.reduce((sum, day) => {
       if (day.workType === 'office') {
         return sum + day.minutes
       } else if (day.workType === 'sick-vacation') {
@@ -72,23 +23,22 @@ export function useWorkSchedule() {
       }
       return sum
     }, 0)
+  }
+
+  const getWorkingDays = () => daysAndDividers.value.filter(item => item.type === 'day' && !item.isHoliday)
+
+  const officePercentage = computed(() => {
+    const workingDays = getWorkingDays()
+    const totalWorkMinutes = workingDays.length * 480
+    const officeMinutes = calculateWorkMinutes(workingDays)
     return totalWorkMinutes > 0 ? (officeMinutes / totalWorkMinutes) * 100 : 0
   })
 
   const remainingTime = computed(() => {
     if (officePercentage.value >= 40) return 0
-    const workingDays = daysAndDividers.value.filter(item => 
-      item.type === 'day' && !item.isHoliday
-    )
+    const workingDays = getWorkingDays()
     const totalWorkMinutes = workingDays.length * 480
-    const currentOfficeMinutes = workingDays.reduce((sum, day) => {
-      if (day.workType === 'office') {
-        return sum + day.minutes
-      } else if (day.workType === 'sick-vacation') {
-        return sum + 480
-      }
-      return sum
-    }, 0)
+    const currentOfficeMinutes = calculateWorkMinutes(workingDays)
     const requiredOfficeMinutes = totalWorkMinutes * 0.4
     return Math.max(0, Math.ceil(requiredOfficeMinutes - currentOfficeMinutes))
   })
@@ -148,6 +98,51 @@ export function useWorkSchedule() {
     d.setUTCDate(d.getUTCDate() + 4 - dayNum)
     const yearStart = new Date(Date.UTC(d.getUTCFullYear(),0,1))
     return Math.ceil((((d - yearStart) / 86400000) + 1)/7)
+  }
+
+  const updateDaysAndDividers = () => {
+    const year = currentDate.value.getFullYear()
+    const month = currentDate.value.getMonth()
+    const daysInMonthCount = new Date(year, month + 1, 0).getDate()
+    
+    const items = []
+    let currentWeek = null
+    let firstWorkdayFound = false
+
+    for (let i = 1; i <= daysInMonthCount; i++) {
+      const date = new Date(year, month, i)
+      const dayOfWeek = date.getDay()
+      const weekNumber = getWeekNumber(date)
+
+      if (dayOfWeek >= 1 && dayOfWeek <= 5 || isHoliday(date.toISOString().split('T')[0])) {
+        if (weekNumber !== currentWeek && firstWorkdayFound) {
+          items.push({ type: 'divider', weekNumber })
+        }
+        
+        if (!firstWorkdayFound) {
+          firstWorkdayFound = true
+          items.push({ type: 'divider', weekNumber })
+        }
+
+        currentWeek = weekNumber
+
+        date.setMinutes(date.getMinutes() - date.getTimezoneOffset())
+        const dateString = date.toISOString().split('T')[0]
+        const storedData = getStoredData(dateString)
+        const holidayName = getHolidayName(dateString)
+
+        items.push({
+          type: 'day',
+          date: dateString,
+          workType: holidayName ? 'holiday' : storedData.type,
+          minutes: holidayName ? 480 : storedData.minutes,
+          isHoliday: !!holidayName,
+          holidayName: holidayName
+        })
+      }
+    }
+
+    daysAndDividers.value = items
   }
 
   return {
