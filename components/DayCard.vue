@@ -6,8 +6,8 @@
       @mousedown="handleMouseDown"
       @mouseup="handleMouseUp"
       @mouseleave="cancelLongPress"
-      @touchstart="handleTouchStart"
-      @touchend="handleTouchEnd"
+      @touchstart.passive="handleTouchStart"
+      @touchend.prevent="handleTouchEnd"
       @touchcancel="cancelLongPress"
     >
       <div class="day-card-inner">
@@ -52,6 +52,8 @@ const longPressTimer = ref(null)
 const longPressDuration = 500 // ms
 const isLongPress = ref(false)
 const touchStartTime = ref(0)
+const touchStartY = ref(0)
+const touchStartX = ref(0)
 
 const showHours = computed(() => currentType.value === 'office' || currentType.value === 'sick-vacation')
 const isEditable = computed(() => currentType.value === 'office')
@@ -95,7 +97,6 @@ function flipCard(newType) {
 
 function openTimeSelector(event) {
   event.stopPropagation()
-  event.preventDefault()
   if (isEditable.value) {
     showTimeSelector.value = true
     cancelLongPress()
@@ -111,52 +112,36 @@ function handleHoursTouchEnd(event) {
   event.stopPropagation()
   event.preventDefault()
   const touchDuration = Date.now() - touchStartTime.value
-  if (touchDuration < 500) { // Adjust this value if needed
+  if (touchDuration < 300) {
     openTimeSelector(event)
   }
 }
 
-function handleMouseDown(event) {
-  if (props.day.isHoliday || showTimeSelector.value) return
-  event.preventDefault()
-  isLongPress.value = false
-  longPressTimer.value = setTimeout(() => {
-    isLongPress.value = true
-    const newType = currentType.value === 'sick-vacation' ? 'home' : 'sick-vacation'
-    flipCard(newType)
-  }, longPressDuration)
-}
-
 function handleTouchStart(event) {
   if (props.day.isHoliday || showTimeSelector.value) return
-  event.preventDefault()
   touchStartTime.value = Date.now()
-  handleMouseDown(event)
-}
-
-function handleMouseUp(event) {
-  if (props.day.isHoliday || showTimeSelector.value) return
-  
-  if (longPressTimer.value) {
-    clearTimeout(longPressTimer.value)
-    longPressTimer.value = null
-    
-    if (!isLongPress.value) {
-      // This was a short press, so flip the card
-      const newType = currentType.value === 'home' ? 'office' : 'home'
-      flipCard(newType)
-    }
-  }
-  
-  isLongPress.value = false
+  touchStartY.value = event.touches[0].clientY
+  touchStartX.value = event.touches[0].clientX
 }
 
 function handleTouchEnd(event) {
-  event.preventDefault()
+  const touchEndY = event.changedTouches[0].clientY
+  const touchEndX = event.changedTouches[0].clientX
   const touchDuration = Date.now() - touchStartTime.value
-  if (touchDuration < 500) { // Adjust this value if needed
-    handleMouseUp(event)
+  const verticalDistance = Math.abs(touchEndY - touchStartY.value)
+  const horizontalDistance = Math.abs(touchEndX - touchStartX.value)
+
+  // If it's a short touch and there's minimal movement, treat it as a tap
+  if (touchDuration < 300 && verticalDistance < 10 && horizontalDistance < 10) {
+    handleTap()
   }
+  // Otherwise, it's likely a scroll or some other gesture, so do nothing
+}
+
+function handleTap() {
+  if (props.day.isHoliday || showTimeSelector.value) return
+  const newType = currentType.value === 'home' ? 'office' : 'home'
+  flipCard(newType)
 }
 
 function cancelLongPress() {
