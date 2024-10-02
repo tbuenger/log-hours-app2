@@ -7,25 +7,27 @@
         {{ formatRemainingTimeShort(remainingTime) }}
       </span>
     </div>
-    <div class="month-picker">
-      <button @click="changeMonth(-1)">Previous</button>
-      <span>{{ currentMonthYear }}</span>
-      <button @click="changeMonth(1)">Next</button>
-    </div>
-    <div class="cards-container">
-      <template v-for="(item, index) in daysAndDividers" :key="index">
-        <WeekDivider v-if="item.type === 'divider'" :weekNumber="item.weekNumber" />
-        <DayCard
-          v-else
-          :day="item"
-          @update:type="updateDayType(item.date, $event)"
-          @update:hours="updateDayHours(item.date, $event)"
-        />
-      </template>
-    </div>
-    <div class="reset-buttons">
-      <button @click="clearCurrentMonth">Clear Current Month</button>
-      <button @click="clearAllData">Clear All Data</button>
+    <div class="content">
+      <div class="month-picker">
+        <button @click="changeMonth(-1)">Previous</button>
+        <span>{{ currentMonthYear }}</span>
+        <button @click="changeMonth(1)">Next</button>
+      </div>
+      <div class="cards-container">
+        <template v-for="(item, index) in daysAndDividers" :key="index">
+          <WeekDivider v-if="item.type === 'divider'" :weekNumber="item.weekNumber" />
+          <DayCard
+            v-else
+            :day="item"
+            @update:type="updateDayType(item.date, $event)"
+            @update:hours="updateDayHours(item.date, $event)"
+          />
+        </template>
+      </div>
+      <div class="reset-buttons">
+        <button @click="clearCurrentMonth">Clear Current Month</button>
+        <button @click="clearAllData">Clear All Data</button>
+      </div>
     </div>
   </div>
 </template>
@@ -275,9 +277,8 @@ onMounted(() => {
   width: 100%;
   max-width: 400px;
   margin: 0 auto;
-  padding: 20px;
   box-sizing: border-box;
-  padding-top: 60px; /* Make room for the fixed progress bar */
+  padding-top: 40px; /* Reduced padding to accommodate removed header */
 }
 
 .progress-bar-container {
@@ -292,6 +293,7 @@ onMounted(() => {
   align-items: center;
   padding: 0 10px;
   justify-content: space-between;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1); /* Added shadow */
 }
 
 .progress-bar {
@@ -316,15 +318,19 @@ onMounted(() => {
   color: #333;
 }
 
+.content {
+  padding: 10px; /* Reduced padding */
+}
+
 .month-picker {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
+  margin-bottom: 10px; /* Reduced margin */
 }
 
 .month-picker button {
-  background-color: var(--primary-color);
+  background-color: #3498db; /* Changed to a blue color */
   color: white;
   border: none;
   padding: 8px 16px;
@@ -340,7 +346,7 @@ onMounted(() => {
 .month-picker span {
   font-size: 1.2em;
   font-weight: bold;
-  color: var(--text-color);
+  color: #333; /* Changed to a darker color for better contrast */
 }
 
 .cards-container {
