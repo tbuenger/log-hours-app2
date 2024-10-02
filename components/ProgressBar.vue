@@ -5,8 +5,12 @@
       :style="{ width: `${percentage}%`, backgroundColor: progressBarColor }"
     ></div>
     <span class="progress-text">{{ percentage.toFixed(1) }}%</span>
-    <span class="remaining-time" v-if="remainingTime > 0">
-      {{ formatRemainingTimeShort(remainingTime) }} missing
+    <span 
+      class="remaining-time" 
+      :class="{ 'negative': percentage < 40, 'positive': percentage >= 40 }"
+    >
+      {{ formatRemainingTimeShort(Math.abs(remainingTime)) }}
+      {{ percentage < 40 ? ' missing' : '' }}
     </span>
   </div>
 </template>
@@ -24,7 +28,8 @@ const progressBarColor = computed(() => props.percentage >= 40 ? '#4CAF50' : '#F
 function formatRemainingTimeShort(minutes) {
   const hours = Math.floor(minutes / 60)
   const mins = minutes % 60
-  return `${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`
+  const sign = props.percentage >= 40 ? '+' : '-'
+  return `${sign}${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`
 }
 </script>
 
@@ -61,5 +66,13 @@ function formatRemainingTimeShort(minutes) {
 
 .remaining-time {
   font-size: 0.9em;
+}
+
+.remaining-time.negative {
+  color: #e57373; /* Slightly red-ish */
+}
+
+.remaining-time.positive {
+  color: #81c784; /* Slightly green-ish */
 }
 </style>
