@@ -57,7 +57,7 @@ html, body {
   width: 100%;
   margin: 0;
   padding: 0;
-  /* Remove overflow: hidden; */
+  background-color: #f5f5f7; /* Subtle light grey background */
 }
 
 body {

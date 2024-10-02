@@ -103,7 +103,7 @@ const installPWA = () => {
   height: 100%;
   display: flex;
   flex-direction: column;
-  padding-top: 60px; /* Add padding to accommodate the progress bar */
+  padding-top: 60px;
 }
 
 .progress-bar-wrapper {
@@ -112,38 +112,43 @@ const installPWA = () => {
   left: 0;
   right: 0;
   z-index: 1000;
+  background-color: #f5f5f7; /* Match the body background color */
+  border-bottom: 1px solid #e0e0e0;
 }
 
 .content {
   flex: 1;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
-  padding: 10px;
+  padding: 20px;
 }
 
 .install-button {
   display: block;
   width: 100%;
-  padding: 10px;
+  padding: 12px;
   margin-top: 20px;
-  background-color: #3498db;
+  background-color: #4CAF50; /* More vibrant green */
   color: white;
   border: none;
-  border-radius: 4px;
+  border-radius: 6px;
   font-size: 16px;
+  font-weight: 500;
   cursor: pointer;
+  transition: background-color 0.3s ease;
 }
 
 .install-button:hover {
-  background-color: #2980b9;
+  background-color: #45a049;
 }
 
 .ios-install-guide {
   margin-top: 20px;
   padding: 15px;
-  background-color: #f0f4f8;
+  background-color: #e8f5e9; /* Light green background */
   border-radius: 8px;
   font-size: 0.9em;
+  border: 1px solid #c8e6c9;
 }
 
 .ios-install-guide ol {

@@ -21,7 +21,7 @@
             v-if="showHours" 
             class="hours text-sm" 
             :class="{ 'non-editable': !isEditable }" 
-            @click.stop="openTimeSelector"
+            @click.stop="openTimeSelector" 
             @mousedown.stop
             @touchstart.stop="handleHoursTouchStart"
             @touchend.stop="handleHoursTouchEnd"
@@ -270,11 +270,11 @@ function closeTimeSelector() {
 }
 
 .day-card-face.home {
-  background-color: var(--card-bg-color-home, #f4f8f0);
+  background-color: var(--card-bg-color-home, #e8f5e9); /* More vibrant light green */
 }
 
 .day-card-face.office {
-  background-color: var(--card-bg-color-office, #f0f4f8);
+  background-color: var(--card-bg-color-office, #e3f2fd); /* More vibrant light blue */
 }
 
 .day-info {
@@ -331,7 +331,7 @@ function closeTimeSelector() {
 }
 
 .day-card-face.sick-vacation {
-  background-color: #ffebee;
+  background-color: #ffebee; /* Light red for sick/vacation */
 }
 
 .is-sick-vacation {
