@@ -61,6 +61,7 @@ const longPressDuration = 500 // ms
 const touchStartTime = ref(0)
 const touchStartY = ref(0)
 const touchStartX = ref(0)
+const isLongPress = ref(false)
 
 const showHours = computed(() => currentType.value === 'office' || currentType.value === 'sick-vacation')
 const isEditable = computed(() => currentType.value === 'office')
@@ -128,7 +129,7 @@ function handleHoursTouchEnd(event) {
 const handleInteraction = (event, interactionType) => {
   if (props.day.isHoliday || showTimeSelector.value) return
 
-  if (interactionType === 'tap') {
+  if (interactionType === 'tap' && !isLongPress.value) {
     if (event.target.classList.contains('hours')) {
       openTimeSelector(event)
     } else {
@@ -136,6 +137,7 @@ const handleInteraction = (event, interactionType) => {
       flipCard(newType)
     }
   } else if (interactionType === 'longPress') {
+    isLongPress.value = true
     const newType = currentType.value === 'sick-vacation' ? 'home' : 'sick-vacation'
     flipCard(newType)
   }
@@ -154,6 +156,7 @@ function handleTouchStart(event) {
   touchStartY.value = event.touches[0].clientY
   touchStartX.value = event.touches[0].clientX
   
+  isLongPress.value = false
   longPressTimer.value = window.setTimeout(() => handleInteraction(event, 'longPress'), longPressDuration)
 }
 
@@ -169,21 +172,33 @@ function handleTouchEnd(event) {
 
   clearLongPressTimer()
 
-  if (touchDuration < 300 && verticalDistance < 10 && horizontalDistance < 10) {
+  if (touchDuration < 300 && verticalDistance < 10 && horizontalDistance < 10 && !isLongPress.value) {
     handleInteraction(event, 'tap')
   }
+
+  // Reset the long press flag after a short delay
+  setTimeout(() => {
+    isLongPress.value = false
+  }, 50)
 }
 
 function handleMouseDown(event) {
   if (props.day.isHoliday || showTimeSelector.value) return
   if (!event.target.classList.contains('hours')) {
+    isLongPress.value = false
     longPressTimer.value = window.setTimeout(() => handleInteraction(event, 'longPress'), longPressDuration)
   }
 }
 
 function handleMouseUp(event) {
   clearLongPressTimer()
-  handleInteraction(event, 'tap')
+  if (!isLongPress.value) {
+    handleInteraction(event, 'tap')
+  }
+  // Reset the long press flag after a short delay
+  setTimeout(() => {
+    isLongPress.value = false
+  }, 50)
 }
 
 const handleMouseLeave = clearLongPressTimer
