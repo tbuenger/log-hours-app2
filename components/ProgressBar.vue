@@ -35,7 +35,7 @@ function formatRemainingTimeShort(minutes) {
   left: 0;
   right: 0;
   height: 40px;
-  background-color: #f0f0f0;
+  background-color: #f5f5f7;
   z-index: 1000;
   display: flex;
   align-items: center;

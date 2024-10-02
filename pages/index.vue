@@ -1,11 +1,9 @@
 <template>
   <div class="container">
-    <div class="progress-bar-wrapper">
-      <ProgressBar 
-        :percentage="officePercentage" 
-        :remaining-time="remainingTime"
-      />
-    </div>
+    <ProgressBar 
+      :percentage="officePercentage" 
+      :remaining-time="remainingTime"
+    />
     <div class="content">
       <MonthPicker 
         :current-month-year="currentMonthYear" 
@@ -103,24 +101,14 @@ const installPWA = () => {
   height: 100%;
   display: flex;
   flex-direction: column;
-  padding-top: 60px;
-}
-
-.progress-bar-wrapper {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  z-index: 1000;
-  background-color: #f5f5f7; /* Match the body background color */
-  border-bottom: 1px solid #e0e0e0;
 }
 
 .content {
   flex: 1;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
-  padding: 20px;
+  padding: 10px;
+  padding-top: 60px; /* Add padding to the top of the content */
 }
 
 .install-button {
