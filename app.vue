@@ -82,6 +82,26 @@ body {
   height: 100%;
 }
 
+/* Disable text selection globally */
+* {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  -khtml-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+
+/* Allow text selection for specific elements if needed */
+.selectable {
+  -webkit-touch-callout: default;
+  -webkit-user-select: text;
+  -khtml-user-select: text;
+  -moz-user-select: text;
+  -ms-user-select: text;
+  user-select: text;
+}
+
 /* Responsive font sizes */
 @media screen and (max-width: 374px) {
   body {
