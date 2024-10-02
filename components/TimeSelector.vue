@@ -3,33 +3,17 @@
     <div class="time-selector-content">
       <h2>{{ formattedDate }}</h2>
       <div class="time-picker">
-        <div class="time-column">
-          <div class="scroll-container" ref="hoursContainer" @wheel="handleWheel('hours', $event)">
-            <div 
-              v-for="h in 24" 
-              :key="`hour-${h-1}`" 
-              class="time-item" 
-              :class="{ 'selected': h - 1 === hours }"
-              @click="setHours(h - 1)"
-            >
-              {{ String(h - 1).padStart(2, '0') }}
-            </div>
-          </div>
-        </div>
-        <div class="time-separator">:</div>
-        <div class="time-column">
-          <div class="scroll-container" ref="minutesContainer" @wheel="handleWheel('minutes', $event)">
-            <div 
-              v-for="m in 60" 
-              :key="`minute-${m-1}`" 
-              class="time-item" 
-              :class="{ 'selected': m - 1 === minutes }"
-              @click="setMinutes(m - 1)"
-            >
-              {{ String(m - 1).padStart(2, '0') }}
-            </div>
-          </div>
-        </div>
+        <select v-model="selectedHours" class="time-dropdown">
+          <option v-for="h in 24" :key="h-1" :value="h-1">
+            {{ String(h-1).padStart(2, '0') }}
+          </option>
+        </select>
+        <span class="time-separator">:</span>
+        <select v-model="selectedMinutes" class="time-dropdown">
+          <option v-for="m in 60" :key="m-1" :value="m-1">
+            {{ String(m-1).padStart(2, '0') }}
+          </option>
+        </select>
       </div>
       <div class="buttons">
         <button @click="confirm">Confirm</button>
@@ -40,7 +24,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, nextTick } from 'vue';
+import { ref, computed } from 'vue';
 
 const props = defineProps({
   initialMinutes: {
@@ -55,57 +39,21 @@ const props = defineProps({
 
 const emit = defineEmits(['update:time', 'close']);
 
-const hours = ref(Math.floor(props.initialMinutes / 60));
-const minutes = ref(props.initialMinutes % 60);
-const hoursContainer = ref(null);
-const minutesContainer = ref(null);
+const selectedHours = ref(Math.floor(props.initialMinutes / 60));
+const selectedMinutes = ref(props.initialMinutes % 60);
 
 const formattedDate = computed(() => {
   return new Date(props.date).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
 });
 
-function setHours(newHours) {
-  hours.value = newHours;
-  scrollToSelected(hoursContainer.value, newHours);
-}
-
-function setMinutes(newMinutes) {
-  minutes.value = newMinutes;
-  scrollToSelected(minutesContainer.value, newMinutes);
-}
-
-function handleWheel(type, event) {
-  event.preventDefault();
-  const delta = Math.sign(event.deltaY);
-  if (type === 'hours') {
-    setHours((hours.value + delta + 24) % 24);
-  } else {
-    setMinutes((minutes.value + delta + 60) % 60);
-  }
-}
-
-function scrollToSelected(container, index) {
-  if (container) {
-    const itemHeight = container.children[0].offsetHeight;
-    container.scrollTop = index * itemHeight - container.offsetHeight / 2 + itemHeight / 2;
-  }
-}
-
 function confirm() {
-  emit('update:time', hours.value * 60 + minutes.value);
+  emit('update:time', selectedHours.value * 60 + selectedMinutes.value);
   emit('close');
 }
 
 function cancel() {
   emit('close');
 }
-
-onMounted(() => {
-  nextTick(() => {
-    scrollToSelected(hoursContainer.value, hours.value);
-    scrollToSelected(minutesContainer.value, minutes.value);
-  });
-});
 </script>
 
 <style scoped>
@@ -136,35 +84,17 @@ onMounted(() => {
   margin: 20px 0;
 }
 
-.time-column {
-  width: 60px;
-  height: 180px;
-  overflow: hidden;
-}
-
-.scroll-container {
-  height: 100%;
-  overflow-y: auto;
-  scroll-snap-type: y mandatory;
-}
-
-.time-item {
-  height: 60px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+.time-dropdown {
   font-size: 24px;
-  scroll-snap-align: center;
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  background-color: #f8f8f8;
   cursor: pointer;
 }
 
-.time-item.selected {
-  background-color: #e0e0e0;
-  font-weight: bold;
-}
-
 .time-separator {
-  font-size: 36px;
+  font-size: 24px;
   margin: 0 10px;
 }
 
@@ -179,6 +109,7 @@ onMounted(() => {
   border: none;
   border-radius: 4px;
   cursor: pointer;
+  font-size: 16px;
 }
 
 .buttons button:first-child {
@@ -189,16 +120,5 @@ onMounted(() => {
 .buttons button:last-child {
   background-color: #f44336;
   color: white;
-}
-
-/* Hide scrollbar for Chrome, Safari and Opera */
-.scroll-container::-webkit-scrollbar {
-  display: none;
-}
-
-/* Hide scrollbar for IE, Edge and Firefox */
-.scroll-container {
-  -ms-overflow-style: none;  /* IE and Edge */
-  scrollbar-width: none;  /* Firefox */
 }
 </style>

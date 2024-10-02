@@ -22,6 +22,7 @@
             class="hours" 
             :class="{ 'non-editable': !isEditable }" 
             @click.stop="openTimeSelector"
+            @mousedown.stop
             @touchstart.stop="handleHoursTouchStart"
             @touchend.stop="handleHoursTouchEnd"
           >
@@ -104,6 +105,7 @@ function flipCard(newType) {
 
 function openTimeSelector(event) {
   event.stopPropagation()
+  event.preventDefault()
   if (isEditable.value) {
     showTimeSelector.value = true
     cancelLongPress()
@@ -151,7 +153,7 @@ function handleTouchEnd(event) {
 
   // If it's a short touch and there's minimal movement, treat it as a tap
   if (touchDuration < 300 && verticalDistance < 10 && horizontalDistance < 10) {
-    handleTap()
+    handleTap(event)
   }
   // Otherwise, it's likely a scroll or some other gesture, so do nothing
 }
@@ -161,10 +163,14 @@ function handleLongPress() {
   flipCard(newType)
 }
 
-function handleTap() {
+function handleTap(event) {
   if (props.day.isHoliday || showTimeSelector.value) return
-  const newType = currentType.value === 'home' ? 'office' : 'home'
-  flipCard(newType)
+  if (event.target.classList.contains('hours')) {
+    openTimeSelector(event)
+  } else {
+    const newType = currentType.value === 'home' ? 'office' : 'home'
+    flipCard(newType)
+  }
 }
 
 function cancelLongPress() {
@@ -202,15 +208,17 @@ function closeTimeSelector() {
 // Add these mouse event handlers to support desktop long-press
 function handleMouseDown(event) {
   if (props.day.isHoliday || showTimeSelector.value) return
-  longPressTimer.value = setTimeout(() => {
-    handleLongPress()
-  }, longPressDuration)
+  if (!event.target.classList.contains('hours')) {
+    longPressTimer.value = setTimeout(() => {
+      handleLongPress()
+    }, longPressDuration)
+  }
 }
 
 function handleMouseUp(event) {
   clearTimeout(longPressTimer.value)
   if (!isLongPress.value) {
-    handleTap()
+    handleTap(event)
   }
   isLongPress.value = false
 }
