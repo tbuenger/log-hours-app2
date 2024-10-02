@@ -21,20 +21,12 @@
       <button v-if="showInstallPrompt" @click="installPWA" class="install-button">
         Install App
       </button>
-      <div v-if="isIOS" class="ios-install-guide">
-        <p>To install this app on your iPhone:</p>
-        <ol>
-          <li>Tap the Share button <span class="icon">􀈂</span> at the bottom of the screen.</li>
-          <li>Scroll down and tap "Add to Home Screen".</li>
-          <li>Tap "Add" in the top right corner.</li>
-        </ol>
-      </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, watch, computed } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import { useWorkSchedule } from '~/composables/useWorkSchedule'
 import ProgressBar from '~/components/ProgressBar.vue'
 import MonthPicker from '~/components/MonthPicker.vue'
@@ -57,10 +49,6 @@ const {
 
 const showInstallPrompt = ref(false)
 let deferredPrompt = null
-
-const isIOS = computed(() => {
-  return process.client && /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream
-})
 
 onMounted(() => {
   updateDaysAndDividers()
