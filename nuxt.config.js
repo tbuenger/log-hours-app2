@@ -19,8 +19,8 @@ export default defineNuxtConfig({
   },
   pwa: {
     manifest: {
-      name: 'Work Schedule App',
-      short_name: 'WorkSchedule',
+      name: 'Home Or Office Scheduling App',
+      short_name: 'Home Or Office',
       lang: 'en',
       display: 'standalone',
       orientation: 'portrait',
