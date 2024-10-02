@@ -9,7 +9,7 @@ export default defineNuxtConfig({
         { name: 'apple-mobile-web-app-capable', content: 'yes' },
         { name: 'mobile-web-app-capable', content: 'yes' }, // Add this line
         { name: 'apple-mobile-web-app-status-bar-style', content: 'black-translucent' },
-        { name: 'apple-mobile-web-app-title', content: 'Work Schedule' },
+        { name: 'apple-mobile-web-app-title', content: 'Home or Office' },
       ],
       link: [
         { rel: 'apple-touch-icon', href: '/icons/icon-192x192.png' },
@@ -19,8 +19,8 @@ export default defineNuxtConfig({
   },
   pwa: {
     manifest: {
-      name: 'Home Or Office Scheduling App',
-      short_name: 'Home Or Office',
+      name: 'Home or Office Scheduling App',
+      short_name: 'Home or Office',
       lang: 'en',
       display: 'standalone',
       orientation: 'portrait',
