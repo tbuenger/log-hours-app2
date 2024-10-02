@@ -114,7 +114,11 @@ export function useWorkSchedule() {
       const dayOfWeek = date.getDay()
       const weekNumber = getWeekNumber(date)
 
-      if (dayOfWeek >= 1 && dayOfWeek <= 5 || isHoliday(date.toISOString().split('T')[0])) {
+      date.setMinutes(date.getMinutes() - date.getTimezoneOffset())
+      const dateString = date.toISOString().split('T')[0]
+      const holidayName = getHolidayName(dateString)
+
+      if (dayOfWeek >= 1 && dayOfWeek <= 5 || holidayName) {
         if (weekNumber !== currentWeek && firstWorkdayFound) {
           items.push({ type: 'divider', weekNumber })
         }
@@ -126,10 +130,7 @@ export function useWorkSchedule() {
 
         currentWeek = weekNumber
 
-        date.setMinutes(date.getMinutes() - date.getTimezoneOffset())
-        const dateString = date.toISOString().split('T')[0]
         const storedData = getStoredData(dateString)
-        const holidayName = getHolidayName(dateString)
 
         items.push({
           type: 'day',

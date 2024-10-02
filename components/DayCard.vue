@@ -13,13 +13,13 @@
       <div class="day-card-inner">
         <div class="day-card-face front" :class="currentType">
           <div class="day-info">
-            <div class="weekday">{{ weekdayAbbreviation }}</div>
-            <div class="date">{{ formattedDate }}</div>
+            <div class="weekday text-sm">{{ weekdayAbbreviation }}</div>
+            <div class="date text-xs">{{ formattedDate }}</div>
           </div>
-          <div class="work-type">{{ workTypeWithEmoji(currentType) }}</div>
+          <div class="work-type text-sm truncate">{{ workTypeWithEmoji(currentType) }}</div>
           <div 
             v-if="showHours" 
-            class="hours" 
+            class="hours text-sm" 
             :class="{ 'non-editable': !isEditable }" 
             @click.stop="openTimeSelector"
             @mousedown.stop
@@ -28,7 +28,7 @@
           >
             {{ formatHours(props.day.minutes) }}
           </div>
-          <div v-else-if="props.day.isHoliday" class="holiday-name">{{ props.day.holidayName }}</div>
+          <div v-else-if="props.day.isHoliday" class="holiday-name text-xs truncate">{{ props.day.holidayName }}</div>
           <div v-else class="hours-placeholder"></div>
         </div>
         <div class="day-card-face back" :class="flippedType">
@@ -220,8 +220,8 @@ function closeTimeSelector() {
 
 <style scoped>
 .day-card-container {
-  width: calc(100% - 20px);
-  margin: 0 0 16px;
+  width: calc(100% - 10px);
+  margin: 0 0 12px;
   display: flex;
   justify-content: center;
 }
@@ -254,10 +254,10 @@ function closeTimeSelector() {
   backface-visibility: hidden;
   display: flex;
   align-items: center;
-  padding: 0 12px;
-  border-radius: 8px;
+  padding: 0 8px;
+  border-radius: 6px;
   border: 1px solid var(--card-border-color);
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
   transition: background-color 0.3s ease;
 }
 
@@ -289,29 +289,24 @@ function closeTimeSelector() {
   display: flex;
   justify-content: center;
   align-items: center;
-  font-size: 1em;
-  font-weight: bold;
+  font-weight: 500;
 }
 
 .hours, .hours-placeholder, .holiday-name {
   width: 25%;
   text-align: right;
-  font-size: 0.8em;
 }
 
 .weekday {
-  font-size: 0.9em;
-  font-weight: bold;
+  font-weight: 600;
 }
 
 .date {
-  font-size: 0.8em;
-  color: #666;
+  color: #555;
 }
 
 .hours {
-  font-size: 1em;
-  font-weight: bold;
+  font-weight: 500;
   cursor: pointer;
 }
 

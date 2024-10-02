@@ -18,12 +18,13 @@
         @clear-current-month="clearCurrentMonth" 
         @clear-all-data="clearAllData"
       />
+      <button v-if="deferredPrompt" @click="installPWA" class="install-button">Install App</button>
     </div>
   </div>
 </template>
 
 <script setup>
-import { onMounted, watch } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import { useWorkSchedule } from '~/composables/useWorkSchedule'
 import ProgressBar from '~/components/ProgressBar.vue'
 import MonthPicker from '~/components/MonthPicker.vue'
@@ -44,8 +45,33 @@ const {
   updateDaysAndDividers
 } = useWorkSchedule()
 
-onMounted(updateDaysAndDividers)
+const deferredPrompt = ref(null)
+
+onMounted(() => {
+  updateDaysAndDividers()
+  if (process.client) {
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault()
+      deferredPrompt.value = e
+    })
+  }
+})
+
 watch(currentDate, updateDaysAndDividers)
+
+const installPWA = () => {
+  if (deferredPrompt.value) {
+    deferredPrompt.value.prompt()
+    deferredPrompt.value.userChoice.then((choiceResult) => {
+      if (choiceResult.outcome === 'accepted') {
+        console.log('User accepted the install prompt')
+      } else {
+        console.log('User dismissed the install prompt')
+      }
+      deferredPrompt.value = null
+    })
+  }
+}
 </script>
 
 <style scoped>
@@ -59,5 +85,22 @@ watch(currentDate, updateDaysAndDividers)
 
 .content {
   padding: 10px;
+}
+
+.install-button {
+  display: block;
+  width: 100%;
+  padding: 10px;
+  margin-top: 20px;
+  background-color: #3498db;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.install-button:hover {
+  background-color: #2980b9;
 }
 </style>
