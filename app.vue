@@ -14,19 +14,19 @@
 <script setup>
 import { ref } from 'vue'
 import { useRegisterSW } from 'virtual:pwa-register/vue'
+import { useHead } from '#app'
 
 useHead({
-  title: 'Work Schedule App',
+  viewport: 'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover',
   meta: [
-    { name: 'description', content: 'Track your work schedule and office time with ease' },
-    { name: 'mobile-web-app-capable', content: 'yes' },
-    { name: 'apple-mobile-web-app-status-bar-style', content: 'default' },
-    { name: 'viewport', content: 'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no' }
+    { name: 'apple-mobile-web-app-capable', content: 'yes' },
+    { name: 'apple-mobile-web-app-status-bar-style', content: 'black-translucent' },
+    { name: 'apple-mobile-web-app-title', content: 'Work Schedule' },
   ],
   link: [
     { rel: 'apple-touch-icon', href: '/icons/icon-192x192.png' },
-    { rel: 'stylesheet', href: 'https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap' }
-  ]
+    { rel: 'apple-touch-startup-image', href: '/splash.png' },
+  ],
 })
 
 const { updateServiceWorker } = useRegisterSW({
@@ -114,5 +114,19 @@ body {
   background-color: #3498db;
   color: white;
   cursor: pointer;
+}
+
+/* Add this to your global styles */
+body {
+  margin: 0;
+  padding: 0;
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden;
+}
+
+#__nuxt {
+  height: 100%;
+  width: 100%;
 }
 </style>
