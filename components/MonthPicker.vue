@@ -5,7 +5,7 @@
         <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/>
       </svg>
     </button>
-    <span>{{ currentMonthYear }}</span>
+    <span @click="goToCurrentMonth">{{ currentMonthYear }}</span>
     <button @click="$emit('change-month', 1)" class="icon-button">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="24" height="24">
         <path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/>
@@ -15,8 +15,13 @@
 </template>
 
 <script setup>
-defineProps(['currentMonthYear'])
-defineEmits(['change-month'])
+const props = defineProps(['currentMonthYear'])
+const emit = defineEmits(['change-month'])
+
+function goToCurrentMonth() {
+  const now = new Date()
+  emit('change-month', now)
+}
 </script>
 
 <style scoped>
@@ -56,5 +61,10 @@ span {
   font-size: 1.2em;
   font-weight: bold;
   color: #333;
+  cursor: pointer;
+}
+
+span:hover {
+  text-decoration: underline;
 }
 </style>

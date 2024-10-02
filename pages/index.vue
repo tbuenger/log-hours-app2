@@ -39,13 +39,21 @@ const {
   officePercentage,
   remainingTime,
   currentMonthYear,
-  changeMonth,
   updateDayType,
   updateDayHours,
   clearCurrentMonth,
   clearAllData,
   updateDaysAndDividers
 } = useWorkSchedule()
+
+const changeMonth = (change) => {
+  if (typeof change === 'number') {
+    currentDate.value = new Date(currentDate.value.getFullYear(), currentDate.value.getMonth() + change, 1)
+  } else if (change instanceof Date) {
+    currentDate.value = new Date(change.getFullYear(), change.getMonth(), 1)
+  }
+  updateDaysAndDividers()
+}
 
 const showInstallPrompt = ref(false)
 let deferredPrompt = null
