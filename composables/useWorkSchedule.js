@@ -35,12 +35,12 @@ export function useWorkSchedule() {
   })
 
   const remainingTime = computed(() => {
-    if (officePercentage.value >= 40) return 0
     const workingDays = getWorkingDays()
     const totalWorkMinutes = workingDays.length * 480
     const currentOfficeMinutes = calculateWorkMinutes(workingDays)
     const requiredOfficeMinutes = totalWorkMinutes * 0.4
-    return Math.max(0, Math.ceil(requiredOfficeMinutes - currentOfficeMinutes))
+    const difference = requiredOfficeMinutes - currentOfficeMinutes
+    return Math.round(difference) // Positive if missing time, negative if surplus
   })
 
   const currentMonthYear = computed(() => {
