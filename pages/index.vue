@@ -1,9 +1,11 @@
 <template>
   <div class="container">
-    <ProgressBar 
-      :percentage="officePercentage" 
-      :remaining-time="remainingTime"
-    />
+    <div class="progress-bar-wrapper">
+      <ProgressBar 
+        :percentage="officePercentage" 
+        :remaining-time="remainingTime"
+      />
+    </div>
     <div class="content">
       <MonthPicker 
         :current-month-year="currentMonthYear" 
@@ -59,17 +61,19 @@ const showInstallPrompt = ref(false)
 let deferredPrompt = null
 
 const isIOS = computed(() => {
-  return /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream
+  return process.client && /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream
 })
 
 onMounted(() => {
   updateDaysAndDividers()
   
-  window.addEventListener('beforeinstallprompt', (e) => {
-    e.preventDefault()
-    deferredPrompt = e
-    showInstallPrompt.value = true
-  })
+  if (process.client) {
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault()
+      deferredPrompt = e
+      showInstallPrompt.value = true
+    })
+  }
 })
 
 watch(currentDate, updateDaysAndDividers)
@@ -96,10 +100,24 @@ const installPWA = () => {
   max-width: 400px;
   margin: 0 auto;
   box-sizing: border-box;
-  padding-top: env(safe-area-inset-top);
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  padding-top: 60px; /* Add padding to accommodate the progress bar */
+}
+
+.progress-bar-wrapper {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
 }
 
 .content {
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
   padding: 10px;
 }
 

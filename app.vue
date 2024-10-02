@@ -1,6 +1,8 @@
 <template>
-  <div>
-    <NuxtPage />
+  <div id="app-wrapper">
+    <NuxtLayout>
+      <NuxtPage />
+    </NuxtLayout>
     <div v-if="offlineReady" class="pwa-toast">
       App ready to work offline
     </div>
@@ -50,6 +52,14 @@ const needRefresh = ref(false)
 </script>
 
 <style>
+html, body {
+  height: 100%;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  /* Remove overflow: hidden; */
+}
+
 body {
   font-family: 'Roboto', sans-serif;
   -webkit-font-smoothing: antialiased;
@@ -57,6 +67,19 @@ body {
   font-size: 16px;
   line-height: 1.5;
   color: #333;
+}
+
+#app-wrapper {
+  height: 100%;
+  width: 100%;
+  overflow-y: auto; /* Change this from 'auto' to 'scroll' */
+  -webkit-overflow-scrolling: touch;
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  box-sizing: border-box;
+}
+
+#__nuxt {
+  height: 100%;
 }
 
 /* Responsive font sizes */
@@ -100,7 +123,7 @@ body {
   padding: 12px;
   border: 1px solid #8885;
   border-radius: 4px;
-  z-index: 1;
+  z-index: 1000;
   text-align: left;
   box-shadow: 3px 4px 5px 0 #8885;
   background-color: white;
@@ -114,19 +137,5 @@ body {
   background-color: #3498db;
   color: white;
   cursor: pointer;
-}
-
-/* Add this to your global styles */
-body {
-  margin: 0;
-  padding: 0;
-  height: 100vh;
-  width: 100vw;
-  overflow: hidden;
-}
-
-#__nuxt {
-  height: 100%;
-  width: 100%;
 }
 </style>
