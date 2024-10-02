@@ -2,9 +2,9 @@
   <div class="container">
     <div class="progress-bar-container">
       <div class="progress-bar" :style="{ width: officePercentage + '%', backgroundColor: progressBarColor }"></div>
-      <span class="progress-text">{{ officePercentage.toFixed(1) }}% Office Time</span>
+      <span class="progress-text">{{ officePercentage.toFixed(1) }}%</span>
       <span class="remaining-time" v-if="remainingTime > 0">
-        {{ formatRemainingTime(remainingTime) }} to reach 40%
+        {{ formatRemainingTimeShort(remainingTime) }}
       </span>
     </div>
     <div class="month-picker">
@@ -178,6 +178,12 @@ function formatRemainingTime(minutes) {
   return `${hours}h ${mins}m`
 }
 
+function formatRemainingTimeShort(minutes) {
+  const hours = Math.floor(minutes / 60)
+  const mins = minutes % 60
+  return `${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`
+}
+
 /**
  * Computed property that determines the color of the progress bar.
  * 
@@ -284,18 +290,28 @@ onMounted(() => {
   z-index: 1000;
   display: flex;
   align-items: center;
-  padding: 0 20px;
+  padding: 0 10px;
+  justify-content: space-between;
 }
 
 .progress-bar {
-  height: 20px;
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 100%;
   transition: width 0.3s ease, background-color 0.3s ease;
 }
 
 .progress-text {
-  position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
+  position: relative;
+  z-index: 1;
+  font-weight: bold;
+  color: #333;
+}
+
+.remaining-time {
+  position: relative;
+  z-index: 1;
   font-weight: bold;
   color: #333;
 }
@@ -351,12 +367,5 @@ onMounted(() => {
 
 .reset-buttons button:hover {
   background-color: #c0392b;
-}
-
-.remaining-time {
-  position: absolute;
-  right: 20px;
-  font-weight: bold;
-  color: #333;
 }
 </style>
