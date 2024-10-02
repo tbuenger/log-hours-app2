@@ -4,6 +4,7 @@
       class="day-card" 
       :class="{ 'is-flipped': isFlipped, 'is-holiday': props.day.isHoliday, 'is-sick-vacation': currentType === 'sick-vacation' }" 
       @touchstart="handleTouchStart"
+      @touchmove="handleTouchMove"
       @touchend="handleTouchEnd"
       @touchcancel="handleTouchCancel"
     >
@@ -57,6 +58,9 @@ const currentType = ref(props.day.workType || 'home')
 const longPressTimer = ref(null)
 const longPressDuration = 500 // ms
 const touchStartTime = ref(0)
+const touchStartY = ref(0)
+const touchStartX = ref(0)
+const movementThreshold = 5 // pixels
 
 const showHours = computed(() => currentType.value === 'office' || currentType.value === 'sick-vacation')
 const isEditable = computed(() => currentType.value === 'office')
@@ -102,12 +106,28 @@ function handleTouchStart(event) {
   if (props.day.isHoliday || showTimeSelector.value) return
   
   touchStartTime.value = Date.now()
+  touchStartY.value = event.touches[0].clientY
+  touchStartX.value = event.touches[0].clientX
   
   longPressTimer.value = setTimeout(() => {
     const newType = currentType.value === 'sick-vacation' ? 'home' : 'sick-vacation'
     flipCard(newType)
     longPressTimer.value = null
   }, longPressDuration)
+}
+
+function handleTouchMove(event) {
+  if (longPressTimer.value) {
+    const touchMoveY = event.touches[0].clientY
+    const touchMoveX = event.touches[0].clientX
+    const deltaY = Math.abs(touchMoveY - touchStartY.value)
+    const deltaX = Math.abs(touchMoveX - touchStartX.value)
+    
+    if (deltaY > movementThreshold || deltaX > movementThreshold) {
+      clearTimeout(longPressTimer.value)
+      longPressTimer.value = null
+    }
+  }
 }
 
 function handleTouchEnd(event) {
