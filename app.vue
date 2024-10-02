@@ -1,14 +1,18 @@
 <template>
   <div>
-    <NuxtLayout>
-      <ClientOnly>
-        <NuxtPage />
-      </ClientOnly>
-    </NuxtLayout>
+    <NuxtPage />
+    <div v-if="offlineReady" class="pwa-toast">
+      App ready to work offline
+    </div>
+    <div v-if="needRefresh" class="pwa-toast">
+      New content available, click on reload button to update.
+      <button @click="updateServiceWorker()">Reload</button>
+    </div>
   </div>
 </template>
 
 <script setup>
+import { ref } from 'vue'
 import { useRegisterSW } from 'virtual:pwa-register/vue'
 
 useHead({
@@ -25,7 +29,24 @@ useHead({
   ]
 })
 
-const { updateServiceWorker } = useRegisterSW()
+const { updateServiceWorker } = useRegisterSW({
+  immediate: true,
+  onOfflineReady() {
+    offlineReady.value = true
+  },
+  onNeedRefresh() {
+    needRefresh.value = true
+  },
+  onRegistered(swRegistration) {
+    console.log('SW registered: ', swRegistration)
+  },
+  onRegisterError(error) {
+    console.log('SW registration error', error)
+  },
+})
+
+const offlineReady = ref(false)
+const needRefresh = ref(false)
 </script>
 
 <style>
@@ -69,5 +90,29 @@ body {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.pwa-toast {
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  margin: 16px;
+  padding: 12px;
+  border: 1px solid #8885;
+  border-radius: 4px;
+  z-index: 1;
+  text-align: left;
+  box-shadow: 3px 4px 5px 0 #8885;
+  background-color: white;
+}
+
+.pwa-toast button {
+  margin-top: 8px;
+  padding: 4px 8px;
+  border: 1px solid #8885;
+  border-radius: 4px;
+  background-color: #3498db;
+  color: white;
+  cursor: pointer;
 }
 </style>

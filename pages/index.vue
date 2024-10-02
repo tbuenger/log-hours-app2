@@ -18,7 +18,9 @@
         @clear-current-month="clearCurrentMonth" 
         @clear-all-data="clearAllData"
       />
-      <button v-if="deferredPrompt" @click="installPWA" class="install-button">Install App</button>
+      <button v-if="showInstallPrompt" @click="installPWA" class="install-button">
+        Install App
+      </button>
     </div>
   </div>
 </template>
@@ -45,30 +47,32 @@ const {
   updateDaysAndDividers
 } = useWorkSchedule()
 
-const deferredPrompt = ref(null)
+const showInstallPrompt = ref(false)
+let deferredPrompt = null
 
 onMounted(() => {
   updateDaysAndDividers()
-  if (process.client) {
-    window.addEventListener('beforeinstallprompt', (e) => {
-      e.preventDefault()
-      deferredPrompt.value = e
-    })
-  }
+  
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault()
+    deferredPrompt = e
+    showInstallPrompt.value = true
+  })
 })
 
 watch(currentDate, updateDaysAndDividers)
 
 const installPWA = () => {
-  if (deferredPrompt.value) {
-    deferredPrompt.value.prompt()
-    deferredPrompt.value.userChoice.then((choiceResult) => {
+  if (deferredPrompt) {
+    deferredPrompt.prompt()
+    deferredPrompt.userChoice.then((choiceResult) => {
       if (choiceResult.outcome === 'accepted') {
         console.log('User accepted the install prompt')
       } else {
         console.log('User dismissed the install prompt')
       }
-      deferredPrompt.value = null
+      deferredPrompt = null
+      showInstallPrompt.value = false
     })
   }
 }

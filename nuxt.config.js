@@ -1,4 +1,5 @@
 export default defineNuxtConfig({
+  ssr: false,
   modules: [
     '@vite-pwa/nuxt'
   ],
@@ -30,6 +31,7 @@ export default defineNuxtConfig({
     },
     workbox: {
       navigateFallback: '/',
+      globPatterns: ['**/*.{js,css,html,png,svg,ico}'],
     },
     devOptions: {
       enabled: true,
