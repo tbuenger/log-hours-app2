@@ -1,4 +1,4 @@
-# Work Schedule Application
+# Home or Office Application
 
 ## Overview
 
