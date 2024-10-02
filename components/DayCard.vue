@@ -17,7 +17,7 @@
             <div class="date">{{ formattedDate }}</div>
           </div>
           <div class="work-type">{{ workTypeWithEmoji(currentType) }}</div>
-          <div v-if="showHours" class="hours" :class="{ 'non-editable': !isEditable }" @click.stop="toggleHoursSelector">
+          <div v-if="showHours" class="hours" :class="{ 'non-editable': !isEditable }" @click.stop="toggleTimeSelector">
             {{ formatHours(props.day.hours) }}
           </div>
           <div v-else-if="props.day.isHoliday" class="holiday-name">{{ props.day.holidayName }}</div>
@@ -28,23 +28,25 @@
         </div>
       </div>
     </div>
-    <HoursSelector 
-      v-if="showHoursSelector" 
-      :hours="props.day.hours" 
-      @update:hours="updateHours" 
-      @close="showHoursSelector = false"
+    <TimeSelector 
+      v-if="showTimeSelector" 
+      :initialHours="Math.floor(props.day.hours)"
+      :initialMinutes="Math.round((props.day.hours % 1) * 60)"
+      :date="props.day.date"
+      @update:time="updateHours" 
+      @close="showTimeSelector = false"
     />
   </div>
 </template>
 
 <script setup>
 import { ref, computed, watch, onMounted } from 'vue'
-import HoursSelector from './HoursSelector.vue'
+import TimeSelector from './TimeSelector.vue'
 
 const props = defineProps(['day'])
 const emit = defineEmits(['update:type', 'update:hours'])
 
-const showHoursSelector = ref(false)
+const showTimeSelector = ref(false)
 const isFlipped = ref(false)
 const currentType = ref(props.day.workType || 'home')
 const longPressTimer = ref(null)
@@ -91,15 +93,16 @@ function flipCard(newType) {
   }, 150)
 }
 
-function toggleHoursSelector(event) {
+function toggleTimeSelector(event) {
   if (!isEditable.value) return
   event.stopPropagation()
-  showHoursSelector.value = !showHoursSelector.value
+  showTimeSelector.value = !showTimeSelector.value
 }
 
 function updateHours(newHours) {
   if (!isEditable.value) return
   emit('update:hours', newHours)
+  showTimeSelector.value = false
 }
 
 function formatHours(hours) {
