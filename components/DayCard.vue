@@ -5,10 +5,10 @@
       :class="{ 'is-flipped': isFlipped, 'is-holiday': props.day.isHoliday, 'is-sick-vacation': currentType === 'sick-vacation' }" 
       @mousedown="handleMouseDown"
       @mouseup="handleMouseUp"
-      @mouseleave="cancelLongPress"
+      @mouseleave="clearTimeout(longPressTimer.value)"
       @touchstart.passive="handleTouchStart"
       @touchend="handleTouchEnd"
-      @touchcancel="cancelLongPress"
+      @touchcancel="clearTimeout(longPressTimer.value)"
     >
       <div class="day-card-inner">
         <div class="day-card-face front" :class="currentType">
@@ -58,7 +58,6 @@ const isFlipped = ref(false)
 const currentType = ref(props.day.workType || 'home')
 const longPressTimer = ref(null)
 const longPressDuration = 500 // ms
-const isLongPress = ref(false)
 const touchStartTime = ref(0)
 const touchStartY = ref(0)
 const touchStartX = ref(0)
@@ -108,7 +107,7 @@ function openTimeSelector(event) {
   event.preventDefault()
   if (isEditable.value) {
     showTimeSelector.value = true
-    cancelLongPress()
+    clearTimeout(longPressTimer.value)
   }
 }
 
@@ -132,7 +131,6 @@ function handleTouchStart(event) {
   touchStartY.value = event.touches[0].clientY
   touchStartX.value = event.touches[0].clientX
   
-  // Start long press timer
   longPressTimer.value = setTimeout(() => {
     handleLongPress()
   }, longPressDuration)
@@ -148,14 +146,11 @@ function handleTouchEnd(event) {
   const verticalDistance = Math.abs(touchEndY - touchStartY.value)
   const horizontalDistance = Math.abs(touchEndX - touchStartX.value)
 
-  // Clear long press timer
   clearTimeout(longPressTimer.value)
 
-  // If it's a short touch and there's minimal movement, treat it as a tap
   if (touchDuration < 300 && verticalDistance < 10 && horizontalDistance < 10) {
     handleTap(event)
   }
-  // Otherwise, it's likely a scroll or some other gesture, so do nothing
 }
 
 function handleLongPress() {
@@ -171,10 +166,6 @@ function handleTap(event) {
     const newType = currentType.value === 'home' ? 'office' : 'home'
     flipCard(newType)
   }
-}
-
-function cancelLongPress() {
-  clearTimeout(longPressTimer.value)
 }
 
 watch(() => props.day.workType, (newType) => {
@@ -205,7 +196,6 @@ function closeTimeSelector() {
   showTimeSelector.value = false
 }
 
-// Add these mouse event handlers to support desktop long-press
 function handleMouseDown(event) {
   if (props.day.isHoliday || showTimeSelector.value) return
   if (!event.target.classList.contains('hours')) {
@@ -217,10 +207,7 @@ function handleMouseDown(event) {
 
 function handleMouseUp(event) {
   clearTimeout(longPressTimer.value)
-  if (!isLongPress.value) {
-    handleTap(event)
-  }
-  isLongPress.value = false
+  handleTap(event)
 }
 
 </script>
