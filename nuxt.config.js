@@ -3,12 +3,26 @@ export default defineNuxtConfig({
   modules: [
     '@vite-pwa/nuxt'
   ],
+  app: {
+    head: {
+      meta: [
+        { name: 'apple-mobile-web-app-capable', content: 'yes' },
+        { name: 'apple-mobile-web-app-status-bar-style', content: 'black-translucent' },
+        { name: 'apple-mobile-web-app-title', content: 'Work Schedule' },
+      ],
+      link: [
+        { rel: 'apple-touch-icon', href: '/icons/icon-192x192.png' },
+        { rel: 'apple-touch-startup-image', href: '/splash.png' },
+      ],
+    },
+  },
   pwa: {
     manifest: {
       name: 'Work Schedule App',
       short_name: 'WorkSchedule',
       lang: 'en',
       display: 'standalone',
+      orientation: 'portrait',
       theme_color: '#3498db',
       background_color: '#ffffff',
       icons: [

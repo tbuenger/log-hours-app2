@@ -21,12 +21,20 @@
       <button v-if="showInstallPrompt" @click="installPWA" class="install-button">
         Install App
       </button>
+      <div v-if="isIOS" class="ios-install-guide">
+        <p>To install this app on your iPhone:</p>
+        <ol>
+          <li>Tap the Share button <span class="icon">􀈂</span> at the bottom of the screen.</li>
+          <li>Scroll down and tap "Add to Home Screen".</li>
+          <li>Tap "Add" in the top right corner.</li>
+        </ol>
+      </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, watch } from 'vue'
+import { ref, onMounted, watch, computed } from 'vue'
 import { useWorkSchedule } from '~/composables/useWorkSchedule'
 import ProgressBar from '~/components/ProgressBar.vue'
 import MonthPicker from '~/components/MonthPicker.vue'
@@ -49,6 +57,10 @@ const {
 
 const showInstallPrompt = ref(false)
 let deferredPrompt = null
+
+const isIOS = computed(() => {
+  return /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream
+})
 
 onMounted(() => {
   updateDaysAndDividers()
@@ -84,7 +96,7 @@ const installPWA = () => {
   max-width: 400px;
   margin: 0 auto;
   box-sizing: border-box;
-  padding-top: 40px;
+  padding-top: env(safe-area-inset-top);
 }
 
 .content {
@@ -106,5 +118,21 @@ const installPWA = () => {
 
 .install-button:hover {
   background-color: #2980b9;
+}
+
+.ios-install-guide {
+  margin-top: 20px;
+  padding: 15px;
+  background-color: #f0f4f8;
+  border-radius: 8px;
+  font-size: 0.9em;
+}
+
+.ios-install-guide ol {
+  padding-left: 20px;
+}
+
+.ios-install-guide .icon {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
 }
 </style>
