@@ -136,17 +136,19 @@ const currentMonthYear = computed(() => {
  * @returns {number} Percentage of office time
  */
 const officePercentage = computed(() => {
-  const workingDays = daysAndDividers.value.filter(item => item.type === 'day')
+  const workingDays = daysAndDividers.value.filter(item => 
+    item.type === 'day' && !item.isHoliday
+  )
   const totalWorkHours = workingDays.length * 8 // 8 hours per working day
   const officeHours = workingDays.reduce((sum, day) => {
     if (day.workType === 'office') {
       return sum + day.hours
-    } else if (day.workType === 'holiday' || day.workType === 'sick-vacation') {
+    } else if (day.workType === 'sick-vacation') {
       return sum + 8
     }
     return sum
   }, 0)
-  return (officeHours / totalWorkHours) * 100
+  return totalWorkHours > 0 ? (officeHours / totalWorkHours) * 100 : 0
 })
 
 /**
@@ -211,6 +213,7 @@ function clearCurrentMonth() {
 
   for (let i = 1; i <= daysInMonthCount; i++) {
     const date = new Date(year, month, i)
+    date.setMinutes(date.getMinutes() - date.getTimezoneOffset()) // Adjust for timezone
     const dateString = date.toISOString().split('T')[0]
     localStorage.removeItem(dateString)
   }
