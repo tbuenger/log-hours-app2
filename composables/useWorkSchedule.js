@@ -44,7 +44,9 @@ export function useWorkSchedule() {
   })
 
   const currentMonthYear = computed(() => {
-    return currentDate.value.toLocaleString('default', { month: 'long', year: 'numeric' })
+    const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
+    const date = currentDate.value
+    return `${months[date.getMonth()]} ${date.getFullYear()}`
   })
 
   const changeMonth = (delta) => {

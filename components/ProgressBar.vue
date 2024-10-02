@@ -6,7 +6,7 @@
     ></div>
     <span class="progress-text">{{ percentage.toFixed(1) }}%</span>
     <span class="remaining-time" v-if="remainingTime > 0">
-      {{ formatRemainingTimeShort(remainingTime) }}
+      {{ formatRemainingTimeShort(remainingTime) }} missing
     </span>
   </div>
 </template>
@@ -57,5 +57,9 @@ function formatRemainingTimeShort(minutes) {
   z-index: 1;
   font-weight: bold;
   color: #333;
+}
+
+.remaining-time {
+  font-size: 0.9em;
 }
 </style>
